@@ -7,6 +7,7 @@ static int g0_has_alg(BCRYPT_ALGORITHM_IDENTIFIER *l, ULONG n, const wchar_t *na
 
 /* ---- BCryptEnumAlgorithms ----------------------------------------------- */
 TEST(gap0_enumalg_all_contains_basics) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumAlgorithms)); REQUIRE(U(BCryptFreeBuffer));
     ULONG n = 0; BCRYPT_ALGORITHM_IDENTIFIER *l = NULL;
     G0_OKST(U(BCryptEnumAlgorithms)(0, &n, &l, 0));
@@ -18,6 +19,7 @@ TEST(gap0_enumalg_all_contains_basics) {
     U(BCryptFreeBuffer)(l);
 }
 TEST(gap0_enumalg_filter_by_operation) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumAlgorithms)); REQUIRE(U(BCryptFreeBuffer));
     static const struct { ULONG op, cls; const wchar_t *must; } t[] = {
         { BCRYPT_CIPHER_OPERATION, 1, L"AES" }, { BCRYPT_HASH_OPERATION, 2, L"SHA256" },
@@ -34,6 +36,7 @@ TEST(gap0_enumalg_filter_by_operation) {
     }
 }
 TEST(gap0_enumalg_combined_ops_are_additive) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumAlgorithms)); REQUIRE(U(BCryptFreeBuffer));
     ULONG n1 = 0, n2 = 0, n12 = 0, nall = 0; BCRYPT_ALGORITHM_IDENTIFIER *l;
     G0_OKST(U(BCryptEnumAlgorithms)(BCRYPT_CIPHER_OPERATION, &n1, &l, 0)); U(BCryptFreeBuffer)(l);
@@ -45,6 +48,7 @@ TEST(gap0_enumalg_combined_ops_are_additive) {
     EXPECT_EQ(nall, n12);                                    /* 0 and "all seven bits" are equivalent */
 }
 TEST(gap0_enumalg_invalid_arguments) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumAlgorithms));
     ULONG n = 77; BCRYPT_ALGORITHM_IDENTIFIER *l = NULL;
     ST(U(BCryptEnumAlgorithms)(0, NULL, &l, 0), G0_INVALID_PARAMETER);
@@ -55,6 +59,7 @@ TEST(gap0_enumalg_invalid_arguments) {
     EXPECT_EQ(n, 77); CHECK(l == NULL);
 }
 TEST(gap0_enumalg_names_resolve_to_providers) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumAlgorithms)); REQUIRE(U(BCryptFreeBuffer)); REQUIRE(U(BCryptOpenAlgorithmProvider));
     ULONG n = 0; BCRYPT_ALGORITHM_IDENTIFIER *l = NULL;
     G0_OKST(U(BCryptEnumAlgorithms)(BCRYPT_HASH_OPERATION, &n, &l, 0));
@@ -68,6 +73,7 @@ TEST(gap0_enumalg_names_resolve_to_providers) {
 
 /* ---- BCryptEnumProviders -------------------------------------------------- */
 TEST(gap0_enumproviders_sha256) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumProviders)); REQUIRE(U(BCryptFreeBuffer));
     ULONG n = 0; BCRYPT_PROVIDER_NAME *l = NULL;
     G0_OKST(U(BCryptEnumProviders)(L"SHA256", &n, &l, 0));
@@ -76,6 +82,7 @@ TEST(gap0_enumproviders_sha256) {
     U(BCryptFreeBuffer)(l);
 }
 TEST(gap0_enumproviders_provider_names_are_openable) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumProviders)); REQUIRE(U(BCryptFreeBuffer)); REQUIRE(U(BCryptOpenAlgorithmProvider));
     static const wchar_t *ids[] = {L"AES", L"SHA1", L"RSA", L"ECDH_P256", L"RNG"};
     for (int k = 0; k < 5; k++) {
@@ -92,6 +99,7 @@ TEST(gap0_enumproviders_provider_names_are_openable) {
     }
 }
 TEST(gap0_enumproviders_invalid_arguments) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumProviders));
     ULONG n = 55; BCRYPT_PROVIDER_NAME *l = NULL;
     ST(U(BCryptEnumProviders)(NULL, &n, &l, 0), G0_INVALID_PARAMETER);
@@ -102,6 +110,7 @@ TEST(gap0_enumproviders_invalid_arguments) {
     EXPECT_EQ(n, 55); CHECK(l == NULL);
 }
 TEST(gap0_enumproviders_unknown_algorithm_note) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumProviders));
     ULONG n = 55; BCRYPT_PROVIDER_NAME *l = NULL;
     NTSTATUS st = U(BCryptEnumProviders)(L"NO_SUCH_ALGORITHM_ID", &n, &l, 0);
@@ -112,6 +121,7 @@ TEST(gap0_enumproviders_unknown_algorithm_note) {
 
 /* ---- BCryptEnumRegisteredProviders ------------------------------------------ */
 TEST(gap0_enumregisteredproviders_basic) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumRegisteredProviders)); REQUIRE(U(BCryptFreeBuffer));
     ULONG cb = 0; CRYPT_PROVIDERS *p = NULL;
     G0_OKST(U(BCryptEnumRegisteredProviders)(&cb, &p));
@@ -126,12 +136,14 @@ TEST(gap0_enumregisteredproviders_basic) {
     }
 }
 TEST(gap0_enumregisteredproviders_null_size_pointer) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumRegisteredProviders));
     CRYPT_PROVIDERS *p = NULL;
     ST(U(BCryptEnumRegisteredProviders)(NULL, &p), G0_INVALID_PARAMETER);
     CHECK(p == NULL);
 }
 TEST(gap0_enumregisteredproviders_repeatable) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptEnumRegisteredProviders)); REQUIRE(U(BCryptFreeBuffer));
     ULONG c1 = 0, c2 = 0; CRYPT_PROVIDERS *p1 = NULL, *p2 = NULL;
     G0_OKST(U(BCryptEnumRegisteredProviders)(&c1, &p1)); G0_OKST(U(BCryptEnumRegisteredProviders)(&c2, &p2));
@@ -142,6 +154,7 @@ TEST(gap0_enumregisteredproviders_repeatable) {
 /* ---- Context configuration queries (read-only) ---------------------------------- */
 static const ULONG g0_bad_tables[] = { 0, 3, 4, 0x10, 0x80000000u, 0xFFFFFFFFu };
 TEST(gap0_enumcontexts_invalid_table_and_pointer) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptEnumContexts));
     CRYPT_CONTEXTS *c = NULL; ULONG cb = 0;
     for (size_t i = 0; i < sizeof g0_bad_tables / sizeof *g0_bad_tables; i++) ST(U(BCryptEnumContexts)(g0_bad_tables[i], &cb, &c), G0_INVALID_PARAMETER);
@@ -149,6 +162,7 @@ TEST(gap0_enumcontexts_invalid_table_and_pointer) {
     CHECK(c == NULL);
 }
 TEST(gap0_enumcontexts_local_and_domain) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptEnumContexts)); REQUIRE(U(BCryptFreeBuffer));
     static const ULONG tables[] = { CRYPT_LOCAL, CRYPT_DOMAIN };
     for (int t = 0; t < 2; t++) {
@@ -167,6 +181,7 @@ TEST(gap0_enumcontexts_local_and_domain) {
     }
 }
 TEST(gap0_querycontextconfiguration_default) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptQueryContextConfiguration)); REQUIRE(U(BCryptFreeBuffer));
     CRYPT_CONTEXT_CONFIG *cfg = NULL; ULONG cb = 0;
     NTSTATUS st = U(BCryptQueryContextConfiguration)(CRYPT_LOCAL, L"Default", &cb, &cfg);
@@ -175,6 +190,7 @@ TEST(gap0_querycontextconfiguration_default) {
     if (st >= 0 && cfg) { t_note("dwFlags=0x%lx dwReserved=0x%lx cb=%lu", (unsigned long)cfg->dwFlags, (unsigned long)cfg->dwReserved, (unsigned long)cb); CHECK(cb >= sizeof *cfg); U(BCryptFreeBuffer)(cfg); }
 }
 TEST(gap0_querycontextconfiguration_invalid_arguments) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptQueryContextConfiguration));
     CRYPT_CONTEXT_CONFIG *cfg = NULL; ULONG cb = 0;
     for (size_t i = 0; i < sizeof g0_bad_tables / sizeof *g0_bad_tables; i++) ST(U(BCryptQueryContextConfiguration)(g0_bad_tables[i], L"Default", &cb, &cfg), G0_INVALID_PARAMETER);
@@ -182,6 +198,7 @@ TEST(gap0_querycontextconfiguration_invalid_arguments) {
     CHECK(cfg == NULL);
 }
 TEST(gap0_querycontextconfiguration_missing_context_note) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptQueryContextConfiguration));
     CRYPT_CONTEXT_CONFIG *cfg = NULL; ULONG cb = 0;
     NTSTATUS st = U(BCryptQueryContextConfiguration)(CRYPT_LOCAL, L"Gap0_NoSuchContext_7c1d", &cb, &cfg);
@@ -189,6 +206,7 @@ TEST(gap0_querycontextconfiguration_missing_context_note) {
     CHECK(st < 0); CHECK(cfg == NULL);
 }
 TEST(gap0_enumcontextfunctions_default_cipher) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptEnumContextFunctions)); REQUIRE(U(BCryptFreeBuffer));
     CRYPT_CONTEXT_FUNCTIONS *f = NULL; ULONG cb = 0;
     NTSTATUS st = U(BCryptEnumContextFunctions)(CRYPT_LOCAL, L"Default", BCRYPT_CIPHER_INTERFACE, &cb, &f);
@@ -201,6 +219,7 @@ TEST(gap0_enumcontextfunctions_default_cipher) {
     }
 }
 TEST(gap0_enumcontextfunctions_each_interface) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptEnumContextFunctions)); REQUIRE(U(BCryptFreeBuffer));
     for (ULONG itf = 1; itf <= 8; itf++) {
         CRYPT_CONTEXT_FUNCTIONS *f = NULL; ULONG cb = 0;
@@ -210,6 +229,7 @@ TEST(gap0_enumcontextfunctions_each_interface) {
     }
 }
 TEST(gap0_enumcontextfunctions_invalid_arguments) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptEnumContextFunctions));
     CRYPT_CONTEXT_FUNCTIONS *f = NULL; ULONG cb = 0;
     for (size_t i = 0; i < sizeof g0_bad_tables / sizeof *g0_bad_tables; i++) ST(U(BCryptEnumContextFunctions)(g0_bad_tables[i], L"Default", BCRYPT_CIPHER_INTERFACE, &cb, &f), G0_INVALID_PARAMETER);
@@ -217,6 +237,7 @@ TEST(gap0_enumcontextfunctions_invalid_arguments) {
     CHECK(f == NULL);
 }
 TEST(gap0_querycontextfunctionconfiguration_invalid_arguments) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptQueryContextFunctionConfiguration));
     CRYPT_CONTEXT_FUNCTION_CONFIG *c = NULL; ULONG cb = 0;
     for (size_t i = 0; i < sizeof g0_bad_tables / sizeof *g0_bad_tables; i++)
@@ -225,6 +246,7 @@ TEST(gap0_querycontextfunctionconfiguration_invalid_arguments) {
     CHECK(c == NULL);
 }
 TEST(gap0_querycontextfunctionconfiguration_aes_note) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptQueryContextFunctionConfiguration)); REQUIRE(U(BCryptFreeBuffer));
     CRYPT_CONTEXT_FUNCTION_CONFIG *c = NULL; ULONG cb = 0;
     NTSTATUS st = U(BCryptQueryContextFunctionConfiguration)(CRYPT_LOCAL, L"Default", BCRYPT_CIPHER_INTERFACE, L"AES", &cb, &c);
@@ -232,6 +254,7 @@ TEST(gap0_querycontextfunctionconfiguration_aes_note) {
     if (st >= 0 && c) { t_note("dwFlags=0x%lx dwReserved=0x%lx", (unsigned long)c->dwFlags, (unsigned long)c->dwReserved); U(BCryptFreeBuffer)(c); }
 }
 TEST(gap0_enumcontextfunctionproviders_invalid_arguments) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptEnumContextFunctionProviders));
     CRYPT_CONTEXT_FUNCTION_PROVIDERS *p = NULL; ULONG cb = 0;
     for (size_t i = 0; i < sizeof g0_bad_tables / sizeof *g0_bad_tables; i++)
@@ -240,6 +263,7 @@ TEST(gap0_enumcontextfunctionproviders_invalid_arguments) {
     CHECK(p == NULL);
 }
 TEST(gap0_enumcontextfunctionproviders_aes_note) {
+    if (t_is_wine()) { t_skip("context configuration exports are aborting stubs under Wine"); return; }
     REQUIRE(U(BCryptEnumContextFunctionProviders)); REQUIRE(U(BCryptFreeBuffer));
     CRYPT_CONTEXT_FUNCTION_PROVIDERS *p = NULL; ULONG cb = 0;
     NTSTATUS st = U(BCryptEnumContextFunctionProviders)(CRYPT_LOCAL, L"Default", BCRYPT_CIPHER_INTERFACE, L"AES", &cb, &p);

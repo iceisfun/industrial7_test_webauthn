@@ -130,6 +130,7 @@ TEST(gap0_freebuffer_null_is_noop) {
     CHECK(1);
 }
 TEST(gap0_freebuffer_releases_enum_result) {
+    if (t_is_wine()) { t_skip("aborting stub under Wine"); return; }
     REQUIRE(U(BCryptFreeBuffer)); REQUIRE(U(BCryptEnumAlgorithms));
     ULONG n = 0; BCRYPT_ALGORITHM_IDENTIFIER *l = NULL;
     for (int i = 0; i < 50; i++) {
