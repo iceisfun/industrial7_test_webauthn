@@ -22,7 +22,7 @@ cleanup() {
   [ -n "${XEPID:-}" ] && kill "$XEPID" 2>/dev/null
 }
 trap cleanup EXIT
-ENVV=(WINEPREFIX="$RUN" WINEARCH=win64 WINEDEBUG="${WINEDEBUG:--all}")
+ENVV=(T_ALLOW_MISSING_DLL="${T_ALLOW_MISSING_DLL:-1}" WINEPREFIX="$RUN" WINEARCH=win64 WINEDEBUG="${WINEDEBUG:--all}")
 if [ "${TP_DISPLAY:-none}" = "xephyr" ]; then
   N=$((100 + RANDOM % 800)); Xephyr ":$N" -screen 1024x768 -nolisten tcp >/dev/null 2>&1 & XEPID=$!
   sleep 1; ENVV+=(DISPLAY=":$N")

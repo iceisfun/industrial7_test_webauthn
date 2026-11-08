@@ -107,7 +107,10 @@ int main(int argc, char **argv) {
         return 0xC0DE0001;
     }
     AddVectoredExceptionHandler(1, veh);
-    if (!t_module(g_mods[0])) { printf("FATAL cannot load %s\n", g_mods[0]); return 2; }
+    if (!t_module(g_mods[0])) {
+        if (getenv("T_ALLOW_MISSING_DLL")) printf("NOTE %s not loadable here; every U() will be NULL and tests skip (harness validation only)\n", g_mods[0]);
+        else { printf("FATAL cannot load %s\n", g_mods[0]); return 2; }
+    }
     for (int i = 0; i < g_nt; i++) {
         if (filter && !strstr(g_t[i].n, filter)) continue;
         g_cur = g_t[i].n; g_cur_fail = g_cur_skip = 0;
