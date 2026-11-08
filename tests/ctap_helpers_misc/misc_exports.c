@@ -263,7 +263,7 @@ TEST(ctapmisc_vc_two_calls_instances)
     LONG h2 = f(&IID_DVC, &n2, &p2);
     if (h1 < 0 || h2 < 0) { t_note("create failed 0x%08lx/0x%08lx", (unsigned long)h1, (unsigned long)h2); rel(p1); rel(p2); return; }
     EXPECT_EQ(n1, 1); EXPECT_EQ(n2, 1);
-    t_note("two calls return %s object (%p / %p)", p1 == p2 ? "the same" : "different", p1, p2);
+    t_note("two calls return %s object", p1 == p2 ? "the same" : "different");
     if (p1 != p2) { rel(p1); rel(p2); } else { rel(p1); rel(p2); }
 }
 TEST(ctapmisc_vc_instance_is_iunknown)
