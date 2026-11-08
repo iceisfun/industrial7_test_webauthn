@@ -28,9 +28,23 @@ exports that webauthn.dll depends on. About 3800 tests (some table generated) an
 | `ctap_device_ops_negative` | CtapGetAssertion / MakeCredential / SendCommand / PIN / Verify early-failure paths. | 165 |
 | `make_credential_validation` | WebAuthNAuthenticatorMakeCredential early validation (child process, timeout). | 138 |
 | `get_assertion_validation` | WebAuthNAuthenticatorGetAssertion early validation and allow-list handling. | 397 |
+| `browser_surface` | Entry points and argument shapes that browser integrations use: required export set and version gating, struct-version handling and bytes read per structure and version (guard-page probes), browser-shaped calls, extension payload reads, error-name/DOM mapping for browser-seen HRESULTs, cancellation ids across two threads, module facts. | 48 |
 | `dx_state_and_threading` | Device-change notify start/stop and threading behaviour. | 139 |
 | `gap_00 .. gap_05` | bcrypt/ncrypt public exports: rng, hash, KDF, properties, keys, sign/verify, DPAPI-NG, SSL provider interface, ResetDevice presence. | 130/187/90/38/205/7 |
 | `dx_gap_00 .. dx_gap_05` | State-changing CNG calls (context writers, persisted keys, protection descriptor names, SSL provider handles, delete with impossible ids, ResetDevice). | 7/12/5/18/17/1 |
+
+## browser_surface method
+
+Structure-read probing places one structure at the end of a committed page whose successor is `PAGE_NOACCESS`,
+with only its first S bytes present. A vectored exception handler in the child process (first chance, so
+a handler inside the DLL cannot hide the fault) reports the access violation. The smallest S for which the call
+returns normally is the number of bytes the DLL reads (4-byte granularity) before the call ends with its local
+rejection. Every call carries a fault that is rejected locally (COSE algorithm 0, an RP id that is not valid
+UTF-16, or a list entry with a zero-length credential id), so no probe can reach UI, the service or a device.
+Rows are logged as `NOTE table <m|g> <kind> v<version> mode<n> read=0x.. declared_end=0x.. hr=0x..`. Hard checks
+are the build-independent invariants (a documented version is never read beyond its documented size, versions
+are accepted or rejected with the same HRESULT, read size is monotonic in the version, the output pointer is
+reset). Read sizes themselves and anything that depends on the API version of the build are `NOTE` rows.
 
 ## Method
 

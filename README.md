@@ -27,7 +27,7 @@ skipped by `tools\run_all.bat` unless `/destructive` is passed. `COVERAGE.md` li
 - WebAuthn client: `api_version_platform`, `export_sweep_resolve`, `error_names_dom`, `cancellation_ids`,
   `platform_credentials`, `account_information_codec`, `ctap_authdata_cose`, `ctap_rpc_codec`,
   `ctap_helpers_misc`, `ctap_manage_api`, `ctap_device_ops_negative`, `make_credential_validation`,
-  `get_assertion_validation`.
+  `get_assertion_validation`, `browser_surface`.
 - CNG dependencies: `gap_00` to `gap_05` (bcrypt/ncrypt exports).
 - State-changing: `dx_state_and_threading`, `dx_gap_00` to `dx_gap_05`.
 - Harness check: `core_smoke`.
