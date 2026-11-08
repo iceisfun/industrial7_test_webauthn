@@ -126,7 +126,23 @@ TEST(get_assertion_validation_free_export_aliases)
     FARPROC b = GetProcAddress(m, "WebAuthNFreeUserEntityList");
     FARPROC c = GetProcAddress(m, "WebAuthNFreeDecodedAccountInformation");
     FARPROC d = GetProcAddress(m, "WebAuthNFreeEncodedAccountInformation");
-    t_note("FreeAssertion shares code with FreeUserEntityList=%d FreeDecodedAccountInformation=%d FreeEncodedAccountInformation=%d",
-           a == b, a == c, a == d);
+    FARPROC e = GetProcAddress(m, "WebAuthNCtapFreeSelectedDeviceInformation");
     CHECK(a != NULL);
+    /* all of these exports are the same code (LocalFree if non-NULL) */
+    CHECK(a == b);
+    CHECK(a == c);
+    CHECK(a == d);
+    CHECK(a == e);
+    CHECK(a != (FARPROC)GetProcAddress(m, "WebAuthNFreeCredentialAttestation"));
+}
+
+TEST(get_assertion_validation_free_selected_device_info_alias_null)
+{
+    UDECL(void, WebAuthNCtapFreeSelectedDeviceInformation, (void *));
+    REQUIRE(UN(WebAuthNCtapFreeSelectedDeviceInformation));
+    UN(WebAuthNCtapFreeSelectedDeviceInformation)(NULL);
+    void *p = LocalAlloc(LPTR, 64);
+    CHECK(p != NULL);
+    if (p) UN(WebAuthNCtapFreeSelectedDeviceInformation)(p);
+    CHECK(HeapValidate(GetProcessHeap(), 0, NULL));
 }

@@ -7,9 +7,34 @@ static int g_nreg;
 void ga_register(const gacase *c) { if (g_nreg < 1024) g_reg[g_nreg++] = c; }
 
 /* ---- parent side ------------------------------------------------------- */
+/* The local-failure proofs were made against one build of the DLL (export at RVA 0x16780). On any other build the
+ * validation order could differ and a case might reach the broker/UI path, so the cases only run on that build
+ * unless GA_ALLOW_OTHER_BUILD is set in the environment. */
+#define GA_PROVEN_RVA 0x16780u
+static int build_proven(DWORD *rva_out)
+{
+    HMODULE m = t_module("webauthn.dll");
+    FARPROC p = m ? GetProcAddress(m, "WebAuthNAuthenticatorGetAssertion") : NULL;
+    DWORD rva = p ? (DWORD)((BYTE *)p - (BYTE *)m) : 0;
+    if (rva_out) *rva_out = rva;
+    if (rva == GA_PROVEN_RVA) return 1;
+    return GetEnvironmentVariableA("GA_ALLOW_OTHER_BUILD", NULL, 0) != 0;
+}
+
+TEST(get_assertion_validation_build_identity)
+{
+    REQUIRE(UN(WebAuthNAuthenticatorGetAssertion));
+    DWORD rva = 0;
+    int ok = build_proven(&rva);
+    CHECK(rva != 0);
+    t_note("WebAuthNAuthenticatorGetAssertion export RVA 0x%lx; validation cases %s", (unsigned long)rva,
+           ok ? "enabled" : "disabled (RVA differs from the analysed build; set GA_ALLOW_OTHER_BUILD to force)");
+}
+
 void ga_run(const gacase *c)
 {
     if (!UN(WebAuthNAuthenticatorGetAssertion)) { t_skip("missing export: WebAuthNAuthenticatorGetAssertion"); return; }
+    if (!build_proven(NULL)) { t_skip("DLL build differs from the analysed one; not proven to fail locally"); return; }
     DWORD rc = t_run_child("get_assertion_validation_child", c->name, 10000);
     CHECKF(rc != 0xDEAD0001, "child timed out (call did not fail locally)");
     CHECKF(rc != 0xC0DE0004 && rc != 0xC0DE0005, "case %s refused by safety gate (rc 0x%08lx)", c->name, rc);
