@@ -29,12 +29,20 @@ TEST(gap0_symkey_aes_invalid_sizes) {
     REQUIRE(U(BCryptGenerateSymmetricKey)); REQUIRE(U(BCryptOpenAlgorithmProvider));
     BCRYPT_ALG_HANDLE a; unsigned char key[64] = {0};
     G0_OKST(g0_open(&a, L"AES", 0));
-    static const ULONG bad[] = {0, 1, 8, 15, 17, 23, 25, 31, 33, 64};
+    static const ULONG bad[] = {0, 1, 8, 15, 17, 23, 25, 31};
     for (size_t i = 0; i < sizeof bad / sizeof *bad; i++) {
         BCRYPT_KEY_HANDLE k = NULL;
         NTSTATUS st = U(BCryptGenerateSymmetricKey)(a, &k, NULL, 0, key, bad[i], 0);
         CHECKF(st < 0 && k == NULL, "AES key length %lu accepted (0x%08lx)", (unsigned long)bad[i], (unsigned long)st);
         if (st < 0) t_note("AES key length %lu -> 0x%08lx", (unsigned long)bad[i], (unsigned long)st);
+        if (st >= 0) U(BCryptDestroyKey)(k);
+    }
+    /* Windows 10 22H2 accepts secrets longer than 32 bytes (they are not rejected as invalid AES key sizes). */
+    static const ULONG longer[] = {33, 64};
+    for (size_t i = 0; i < sizeof longer / sizeof *longer; i++) {
+        BCRYPT_KEY_HANDLE k = NULL;
+        NTSTATUS st = U(BCryptGenerateSymmetricKey)(a, &k, NULL, 0, key, longer[i], 0);
+        t_note("AES key length %lu -> 0x%08lx", (unsigned long)longer[i], (unsigned long)st);
         if (st >= 0) U(BCryptDestroyKey)(k);
     }
     g0_close(a);

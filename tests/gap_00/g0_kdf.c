@@ -198,7 +198,8 @@ TEST(gap0_derivekey_small_buffer_and_unknown_kdf_note) {
     unsigned char d[64]; ULONG c = 0;
     NTSTATUS st = U(BCryptDeriveKey)(s, BCRYPT_KDF_HASH, &desc, d, 8, &c, 0);
     t_note("DeriveKey(cb=8) -> 0x%08lx, cbResult=%lu", (unsigned long)st, (unsigned long)c);
-    ST(st, G0_BUFFER_TOO_SMALL);
+    /* Windows 10 22H2: a smaller output buffer is not an error; the result is truncated to cb (status 0, cbResult 8). */
+    ST(st, 0); EXPECT_EQ(c, 8);
     st = U(BCryptDeriveKey)(s, L"NO_SUCH_KDF", NULL, d, sizeof d, &c, 0);
     t_note("DeriveKey(unknown KDF) -> 0x%08lx", (unsigned long)st);
     U(BCryptDestroySecret)(s); U(BCryptDestroyKey)(ka); U(BCryptDestroyKey)(kb); U(BCryptDestroyKey)(pb); g0_close(a);
@@ -255,6 +256,7 @@ TEST(gap0_keyderivation_sp800_108_ctr_properties) {
     c = 0; G0_OKST(U(BCryptKeyDerivation)(k, &d1, o4, 16, &c, 0)); EXPECT_EQ(c, 16);
     CHECK(!memcmp(o1, o2, 48));                    /* deterministic */
     CHECK(memcmp(o1, o3, 48) != 0);                /* label is an input */
-    CHECK(!memcmp(o1, o4, 16));                    /* counter mode: a shorter request is a prefix */
+    /* The requested length is part of the PRF input (SP800-108 [L]), so Windows 10 does not return a prefix. */
+    CHECK(memcmp(o1, o4, 16) != 0);
     U(BCryptDestroyKey)(k); g0_close(a);
 }
