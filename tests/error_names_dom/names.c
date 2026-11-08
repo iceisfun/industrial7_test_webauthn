@@ -273,3 +273,26 @@ TEST(errname_sweep_high_bit_stride) {
     }
     CHECK(bad == 0);
 }
+
+/* ---- string shape: names are plain ASCII identifiers, distinct set of 6 ---- */
+TEST(errname_strings_are_ascii_identifiers) {
+    WebAuthNGetErrorName_pfn f = UN(WebAuthNGetErrorName); REQUIRE(f);
+    for (size_t i = 0; i < EN_N; i++) {
+        PCWSTR s = f((HRESULT)en_table[i].code); if (!s) { CHECK(0); continue; }
+        for (size_t k = 0; s[k]; k++)
+            CHECKF((s[k] >= L'A' && s[k] <= L'Z') || (s[k] >= L'a' && s[k] <= L'z'), "%s char %zu", en_table[i].sym, k);
+    }
+}
+TEST(errname_exactly_six_distinct_strings) {
+    WebAuthNGetErrorName_pfn f = UN(WebAuthNGetErrorName); REQUIRE(f);
+    PCWSTR seen[16]; int n = 0;
+    for (unsigned c = 0; c < 0x400; c++) {
+        PCWSTR s = f((HRESULT)c), t = f((HRESULT)(0x80090000u | c));
+        PCWSTR both[2] = {s, t};
+        for (int k = 0; k < 2; k++) {
+            int dup = 0; for (int j = 0; j < n; j++) if (seen[j] == both[k]) dup = 1;
+            if (!dup && n < 16) seen[n++] = both[k];
+        }
+    }
+    EXPECT_EQ(n, 6); /* Success, InvalidState, NotAllowed, Constraint, NotSupported, Unknown */
+}
