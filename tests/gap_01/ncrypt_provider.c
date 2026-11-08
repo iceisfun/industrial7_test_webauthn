@@ -240,13 +240,14 @@ TEST(gap1_isalg_unsupported_table) {
     REQUIRE(U(NCryptIsAlgSupported));
     NEED_KSP(p);
     /* symmetric, hash and unknown identifiers are not key-storage algorithms */
-    static const LPCWSTR bad[] = { L"AES", L"SHA256", L"MD5", L"3DES", L"RC4", L"gap1NoSuchAlgorithm", L"ECDSA_P257", L"RSA2" };
+    static const LPCWSTR bad[] = { L"SHA256", L"MD5", L"RC4", L"gap1NoSuchAlgorithm", L"ECDSA_P257", L"RSA2" };
     for (size_t i = 0; i < sizeof bad / sizeof *bad; i++) {
         DWORD st = U(NCryptIsAlgSupported)(p, bad[i], 0);
         CHECKF(st != 0, "%ls unexpectedly supported", bad[i]);
-        if (i == 0) t_note("IsAlgSupported(AES) -> 0x%08lx", (unsigned long)st);
-        if (i == 5) t_note("IsAlgSupported(unknown) -> 0x%08lx", (unsigned long)st);
+        if (i == 3) t_note("IsAlgSupported(unknown) -> 0x%08lx", (unsigned long)st);
     }
+    /* Windows 10 22H2: the software KSP reports the symmetric ciphers AES and 3DES as supported (status 0). */
+    t_note("IsAlgSupported(AES) -> 0x%08lx, (3DES) -> 0x%08lx", (unsigned long)U(NCryptIsAlgSupported)(p, L"AES", 0), (unsigned long)U(NCryptIsAlgSupported)(p, L"3DES", 0));
     g_free(p);
 }
 

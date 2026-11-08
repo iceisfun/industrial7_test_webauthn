@@ -54,7 +54,8 @@ static NCRYPT_KEY_HANDLE g_ekey(NCRYPT_PROV_HANDLE prov, LPCWSTR alg, DWORD len,
     NCRYPT_KEY_HANDLE k = 0;
     if (U(NCryptCreatePersistedKey)(prov, &k, alg, NULL, 0, 0) != 0) return 0;
     if (len) U(NCryptSetProperty)(k, NCRYPT_LENGTH_PROPERTY, (PBYTE)&len, sizeof len, 0);
-    if (exportable) { DWORD pol = NCRYPT_ALLOW_EXPORT_FLAG; U(NCryptSetProperty)(k, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE)&pol, sizeof pol, 0); }
+    if (exportable) { /* plaintext (non-PKCS8) private blobs need the plaintext-export policy bit as well as the export bit */
+        DWORD pol = NCRYPT_ALLOW_EXPORT_FLAG | NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG; U(NCryptSetProperty)(k, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE)&pol, sizeof pol, 0); }
     if (finalize && U(NCryptFinalizeKey)(k, 0) != 0) { g_free(k); return 0; }
     return k;
 }

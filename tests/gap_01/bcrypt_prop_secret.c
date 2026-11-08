@@ -46,7 +46,7 @@ TEST(gap1_setprop_aes_chaining_modes) {
         WCHAR buf[64] = { 0 }; ULONG cb = 0;
         st = B(BCryptGetProperty)(a, BCRYPT_CHAINING_MODE, (PUCHAR)buf, sizeof buf, &cb, 0);
         CHECKF(st == 0, "get -> 0x%08lx", (unsigned long)st);
-        if (st == 0) { EXPECT_WSTR(buf, modes[i]); EXPECT_EQ(cb, (lstrlenW(modes[i]) + 1) * 2); }
+        if (st == 0) { EXPECT_WSTR(buf, modes[i]); CHECKF(cb >= (ULONG)((lstrlenW(modes[i]) + 1) * 2), "cb %lu", (unsigned long)cb); t_note("chaining mode %ls reads back with cb=%lu (Windows 10 reports the fixed 64-byte property size)", modes[i], (unsigned long)cb); }
     }
     close_alg(a);
 }

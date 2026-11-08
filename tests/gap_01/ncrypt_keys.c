@@ -38,8 +38,10 @@ TEST(gap1_cpk_symmetric_algorithm_rejected) {
     NEED_KSP(p);
     NCRYPT_KEY_HANDLE k = SENT_K;
     DWORD st = U(NCryptCreatePersistedKey)(p, &k, L"AES", NULL, 0, 0);
-    CHECKF(st != 0, "AES is not a key-storage algorithm");
-    EXPECT_EQ(k, SENT_K);
+    /* Windows 10 22H2: the software KSP creates an (unfinalized, unnamed) AES key: status 0 and a new handle. */
+    G_EQ(st, 0);
+    CHECK(k != SENT_K && k != 0);
+    if (st == 0 && k != SENT_K) g_free(k);
     g_free(p);
 }
 
@@ -103,10 +105,11 @@ TEST(gap1_fin_property_locked_after_finalize) {
     if (!k) { g_free(p); t_skip("RSA key unavailable"); return; }
     DWORD len = 2048, cur = 0, cb = 0;
     DWORD st = U(NCryptSetProperty)(k, NCRYPT_LENGTH_PROPERTY, (PBYTE)&len, sizeof len, 0);
-    CHECKF(st != 0, "Length is immutable after finalization");
+    /* Windows 10 22H2 accepts the write after finalization and the property then reads back the new value (status 0, 2048). */
+    G_EQ(st, 0);
     t_note("SetProperty(Length) after finalize -> 0x%08lx", (unsigned long)st);
     G_EQ(U(NCryptGetProperty)(k, NCRYPT_LENGTH_PROPERTY, (PBYTE)&cur, sizeof cur, &cb, 0), 0);
-    EXPECT_EQ(cur, 1024);
+    EXPECT_EQ(cur, 2048);
     g_free(k); g_free(p);
 }
 
@@ -299,7 +302,11 @@ TEST(gap1_export_ecc_public_blob) {
         G_EQ(U(NCryptExportKey)(k, 0, BCRYPT_ECCPUBLIC_BLOB, NULL, NULL, 0, &cb, 0), 0);        /* size query */
         CHECKF(cb == want, "%ls size %lu want %lu", t[i].alg, (unsigned long)cb, (unsigned long)want);
         cb = 0;
-        G_EQ(U(NCryptExportKey)(k, 0, BCRYPT_ECCPUBLIC_BLOB, NULL, blob, want - 1, &cb, 0), G_NTE_BUFFER_TOO_SMALL);
+        /* Windows 10 22H2 does not reject a buffer one byte short for an ECC public blob (status 0, cb = full size). */
+        DWORD sh = U(NCryptExportKey)(k, 0, BCRYPT_ECCPUBLIC_BLOB, NULL, blob, want - 1, &cb, 0);
+        t_note("%ls export into want-1 bytes -> 0x%08lx cb=%lu", t[i].alg, (unsigned long)sh, (unsigned long)cb);
+        cb = 0;
+        G_EQ(U(NCryptExportKey)(k, 0, BCRYPT_ECCPUBLIC_BLOB, NULL, blob, 4, &cb, 0), G_NTE_BUFFER_TOO_SMALL);
         EXPECT_EQ(cb, want);
         cb = 0; memset(blob, 0xCC, sizeof blob);
         G_EQ(U(NCryptExportKey)(k, 0, BCRYPT_ECCPUBLIC_BLOB, NULL, blob, want, &cb, 0), 0);
@@ -808,7 +815,8 @@ TEST(gap1_derive_buffer_too_small) {
     if (!sa_pair(p, NCRYPT_ECDH_P256_ALGORITHM, &a, &b, &s1, &s2)) { sa_free(a, b, s1, s2); g_free(p); t_skip("ECDH unavailable"); return; }
     BYTE out[64]; DWORD cb = 0x77;
     DWORD st = U(NCryptDeriveKey)(s1, BCRYPT_KDF_RAW_SECRET, NULL, out, 16, &cb, 0);
-    CHECKF(st != 0, "16-byte buffer accepted for a 32-byte secret");
+    /* Windows 10 22H2: a short output buffer is not an error; the secret is truncated (status 0, cb = buffer size). */
+    CHECKF(st == 0 && cb == 16, "16-byte buffer: st=0x%08lx cb=%lu", (unsigned long)st, (unsigned long)cb);
     t_note("DeriveKey(RAW, 16-byte buffer) -> 0x%08lx cb=%lu", (unsigned long)st, (unsigned long)cb);
     sa_free(a, b, s1, s2); g_free(p);
 }
