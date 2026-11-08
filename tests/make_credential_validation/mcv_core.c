@@ -67,7 +67,8 @@ static int resolve_hwnd(mcv_args *a) {
     case MCV_HW_MSGONLY: {
         if (!cw) return 0;
         HWND w = cw(0, "STATIC", "mcv", 0, 0, 0, 0, 0, HWND_MESSAGE, NULL, GetModuleHandleA(NULL), NULL);
-        if (!w) return 0; a->hwnd = w; return 1; }
+        if (!w) return 0;
+        a->hwnd = w; return 1; }
     case MCV_HW_OTHERPROC: {
         pGetShellWindow g = (pGetShellWindow)GetProcAddress(u, "GetShellWindow");
         HWND w = g ? g() : NULL;

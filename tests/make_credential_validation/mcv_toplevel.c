@@ -83,7 +83,7 @@ TEST(mcv_icon_http_checked_before_encoder) {
 /* Other URL forms are not rejected by the entry-point check: the encoder fault is what is reported. */
 static const WCHAR *const k_ok_icons[] = {
     L"https://example.com/icon.png", L"HTTPS://example.com/i", L"data:image/png;base64,AAAA", L" http://example.com/leading-space", L"ftp://example.com/i",
-    L"file:///c:/x.png", L"icon.png", L"", L"htt", L"http:/", L"http:", L"ttp://example.com",
+    L"file:///c:/x.png", L"icon.png", L"", L"htt", L"ttp://example.com", L"xhttp://example.com", L"https://",
 };
 MCB(user_icon_ok_bad_alg) { a->user.pwszIcon = k_ok_icons[p]; mcv_bad_alg(a); }
 MCB(rp_icon_ok_bad_alg)   { a->rp.pwszIcon = k_ok_icons[p]; mcv_bad_alg(a); }
@@ -91,6 +91,7 @@ TEST(mcv_user_icon_non_http_not_rejected_at_entry) {
     REQUIRE(UN(WebAuthNAuthenticatorMakeCredential));
     for (int i = 0; i < 12; i++) mcv_expect("user_icon_ok_bad_alg", i, ENC, 1);
 }
+/* The comparison length is not visible in the decomp (assumed 7 for "http://"); prefixes such as "http:/" are therefore not asserted. */
 TEST(mcv_rp_icon_non_http_not_rejected_at_entry) {
     REQUIRE(UN(WebAuthNAuthenticatorMakeCredential));
     for (int i = 0; i < 12; i++) mcv_expect("rp_icon_ok_bad_alg", i, ENC, 1);

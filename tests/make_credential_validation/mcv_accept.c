@@ -182,3 +182,23 @@ TEST(mcv_documented_unprobed_paths) {
     t_note("concurrent calls: a second in-flight call fails with 0x8001011B via a process-wide busy flag; timing dependent, not called");
     t_note("*ppWebAuthNCredentialAttestation is set to NULL on entry and stays NULL on every early failure");
 }
+
+/* ---- additional boundaries ---- */
+/* The hash algorithm string is not the one used for hashing the client data (the encoder always hashes with SHA-256),
+ * so only presence matters at the entry point. */
+MCT(hashalg_empty_string_not_null, ENC, a->cd.pwszHashAlgId = L""; mcv_bad_alg(a);)
+/* Client data JSON that is longer than its declared size is fine: only cbClientDataJSON bytes are read. */
+MCT(client_cb_one_byte, ENC, a->cd.cbClientDataJSON = 1; mcv_bad_alg(a);)
+/* A user id of exactly one byte and a one-byte-per-field user are accepted at the entry point. */
+MCT(user_minimal_fields, ENC, a->user.cbId = 1; a->user.pwszName = NULL; a->user.pwszDisplayName = NULL; a->user.pwszIcon = NULL; mcv_bad_alg(a);)
+MCT(rp_minimal_fields, ENC, a->rp.pwszName = NULL; a->rp.pwszIcon = NULL; a->rp.pwszId = L"a"; mcv_bad_alg(a);)
+/* Options of every version with every optional pointer NULL and counts zero. */
+MCB(opts_all_empty) { mcv_use_opts(a, (DWORD)p); mcv_bad_alg(a); }
+TEST(mcv_options_all_empty_each_version) { REQUIRE(UN(WebAuthNAuthenticatorMakeCredential)); for (int v = 1; v <= 4; v++) mcv_expect("opts_all_empty", v, ENC, 1); }
+/* Entry-point faults keep precedence when options carry an otherwise valid v4 payload. */
+MCT(v4_options_rp_id_null, NTE, mcv_use_opts(a, 4); a->opts.dwTimeoutMilliseconds = 30000; a->rp.pwszId = NULL;)
+MCT(v4_options_client_json_null, NTE, mcv_use_opts(a, 4); a->cd.pbClientDataJSON = NULL;)
+MCT(v1_options_user_pbid_null, NTE, mcv_use_opts(a, 1); a->user.pbId = NULL;)
+MCT(http_icon_with_v4_options, NTE, mcv_use_opts(a, 4); a->user.pwszIcon = L"http://example.com/i.png";)
+MCT(cose_count_zero_with_valid_array, NTE, a->cose.cCredentialParameters = 0; a->cose.pCredentialParameters = a->cp;)
+MCT(hwnd_null_with_v4_options, NTE, mcv_use_opts(a, 4); a->hwnd_sel = -1;)
