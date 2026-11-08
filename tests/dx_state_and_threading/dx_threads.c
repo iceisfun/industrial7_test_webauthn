@@ -138,8 +138,8 @@ CHILD(dx_stress) {
         DXCF(d == 0, "%lu duplicate cancellation ids out of %lu", (unsigned long)d, (unsigned long)ng);
         free(all);
     }
-    if (kind == K_IUV) t_note("IUVPAA values seen: 0 x%ld, 1 x%ld, other x%ld", (long)seen[0], (long)seen[1], (long)seen[2]);
-    t_note("stress %s threads=%d loader=%d calls=%ld", kname[kind], n, g_loader, (long)calls);
+    if (kind == K_IUV) t_note("IUVPAA values seen: 0 %s, 1 %s, other %s", seen[0] ? "yes" : "no", seen[1] ? "yes" : "no", seen[2] ? "yes" : "no");
+    t_note("stress %s threads=%d loader=%d", kname[kind], n, g_loader);
     DXC(GetModuleHandleW(L"webauthn.dll") != NULL);
     FreeLibrary(priv);
     return dx_rc();

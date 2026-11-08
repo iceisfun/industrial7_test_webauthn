@@ -50,7 +50,7 @@ CHILD(dx_devnotify) {
     }
     for (int i = 0; i < nt; i++) CloseHandle(th[i]);
     g_stop(); g_stop(); g_stop();                        /* leave nothing registered */
-    t_note("pattern %d threads %d iters %d: %ld calls in %llu ms", pattern, nthreads, iters, (long)g_calls, (unsigned long long)(GetTickCount64() - t0));
+    t_note("pattern %d threads %d iters %d: %ld calls", pattern, nthreads, iters, (long)g_calls);
     /* the process must still be able to use the rest of the DLL */
     dx_api a;
     if (dx_resolve(&a)) { BOOL b = 0x7777; DXC(a.iuv(&b) == 0); DXC(b != 0x7777); DXC(a.ver() <= 2); }

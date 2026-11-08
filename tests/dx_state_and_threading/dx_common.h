@@ -103,7 +103,9 @@ static void dx_call_all(const dx_api *a, const char *label) {
     HRESULT hr = a->iuv(&b);
     DXCF(hr == 0, "%s: IUVPAA hr=0x%08lx", label, (unsigned long)hr);
     DXCF(b != 0x7777, "%s: *out was not written", label);
-    t_note("%s: version=%lu IUVPAA hr=0x%08lx value=%ld", label, v, (unsigned long)hr, (long)b);
+    /* notes from concurrently running threads would interleave nondeterministically */
+    int quiet = strstr(label, "-thread") != NULL;
+    if (!quiet) t_note("%s: version=%lu IUVPAA hr=0x%08lx value=%ld", label, v, (unsigned long)hr, (long)b);
     DXC(a->iuv(NULL) == 0);
     for (size_t i = 0; i < DX_NTBL; i++) {
         const wchar_t *p = a->ename(dx_tbl[i].hr);
@@ -118,7 +120,7 @@ static void dx_call_all(const dx_api *a, const char *label) {
     if (!remote) DXCF(hx == 0, "%s: cancel hr=0x%08lx", label, (unsigned long)hx);
     else t_note("%s: remote-session cancel hr=0x%08lx", label, (unsigned long)hx);
     DXC(a->cancel(NULL) == 0);
-    t_note("%s: GetCancellationId hr=0x%08lx cancel hr=0x%08lx", label, (unsigned long)hc, (unsigned long)hx);
+    if (!quiet) t_note("%s: GetCancellationId hr=0x%08lx cancel hr=0x%08lx", label, (unsigned long)hc, (unsigned long)hx);
 }
 
 /* Spawn a child with explicit creation flags and a hard timeout; returns the exit code (see t_run_child). */
