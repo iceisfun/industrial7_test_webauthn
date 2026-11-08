@@ -565,7 +565,7 @@ TEST(aic_dec_limit_user_id_65536_fails) { AIC_REQ(); limit_userid(65536, HR_INVA
 TEST(aic_dec_limit_user_id_1mib_fails) { AIC_REQ(); limit_userid(1 << 20, HR_INVALID_DATA, "user id 1 MiB"); }
 TEST(aic_dec_limit_total_block_over_16k_fails_on_next_alloc) {
     AIC_REQ();
-    /* two 8000-char ids: rp.id (16000 B), then rp.name starts at offset 0x38+16000 > 0x4000 -> refused */
+    /* two 8000-char ids: rp.id (16000 B), then rp.name still starts below 0x4000, but the user struct then starts at 0x38+2*16008 > 0x4000 -> refused */
     char *t = (char *)malloc(8001); memset(t, 'x', 8000); t[8000] = 0;
     SPEC s = { .ver = 1, .has_rp = 1, .has_user = 1, .rid = t, .rname = t };
     B b; b_init(&b, 20000); b_acct(&b, &s);
@@ -626,4 +626,29 @@ TEST(aic_dec_nesting_maps_in_unknown_value) {
     b_uint(&b, 3); b_head(&b, 5, 0);
     AIC_ACCT *o = aic_expect_dec(b.d, b.n, 0, "200 nested single-entry maps"); if (o) aic_free_dec(o);
     b_done(&b);
+}
+
+/* ---- decode-block offset rule: an allocation is refused when it starts above 0x4000 (or is itself > 0x4000) --- */
+static void two_text(size_t idn, size_t namen, HRESULT want, const char *tag) {
+    char *a = (char *)malloc(idn + 1), *c = (char *)malloc(namen + 1);
+    memset(a, 'i', idn); a[idn] = 0; memset(c, 'n', namen); c[namen] = 0;
+    SPEC s = { .ver = 1, .has_rp = 1, .has_user = 1, .rid = a, .rname = c };
+    B b; b_init(&b, idn + namen + 256); b_acct(&b, &s);
+    AIC_ACCT *o = aic_expect_dec(b.d, b.n, want, tag);
+    if (o) { CHECK(o->pRp->pwszName && (size_t)lstrlenW(o->pRp->pwszName) == namen); aic_free_dec(o); }
+    b_done(&b); free(a); free(c);
+}
+TEST(aic_dec_offset_big_id_small_name_ok) { AIC_REQ(); two_text(8000, 1, 0, "id 8000 + name 1"); }
+TEST(aic_dec_offset_big_id_small_name_at_edge_fails) { AIC_REQ(); two_text(8163, 1, HR_INVALID_DATA, "id 8163 + name 1: user struct past 0x4000"); }
+TEST(aic_dec_offset_small_id_big_name_ok) { AIC_REQ(); two_text(1, 8100, 0, "id 1 + name 8100"); }
+TEST(aic_dec_offset_two_4000_char_members_ok) { AIC_REQ(); two_text(4000, 4000, 0, "id 4000 + name 4000"); }
+TEST(aic_dec_offset_two_8000_char_members_fail) { AIC_REQ(); two_text(8000, 8000, HR_INVALID_DATA, "id 8000 + name 8000"); }
+TEST(aic_dec_offset_error_leaves_out_pointer_untouched) {
+    AIC_REQ();
+    char *t = (char *)malloc(8165); memset(t, 'x', 8164); t[8164] = 0;
+    SPEC s = { .ver = 1, .has_rp = 1, .has_user = 1, .rid = t };
+    B b; b_init(&b, 8500); b_acct(&b, &s);
+    AIC_ACCT *o = (AIC_ACCT *)SENT_PTR; HRESULT hr = aic_dec_g(b.d, b.n, 1, &o);
+    HR_EQ(hr, HR_INVALID_DATA); CHECK(o == SENT_PTR);
+    b_done(&b); free(t);
 }
