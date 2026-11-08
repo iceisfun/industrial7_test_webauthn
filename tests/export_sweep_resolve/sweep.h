@@ -52,5 +52,7 @@ static const struct sw_exp *sw_find(const char *name) {
     return NULL;
 }
 
+/* EXPECT_EQ evaluates its arguments twice: use EQ1 when the left side has side effects. */
+#define EQ1(a, b) do { ULONG_PTR v1_ = (ULONG_PTR)(a); EXPECT_EQ(v1_, b); } while (0)
 #define SW_NEED_MODULE() HMODULE h = sw_mod(); do { if (!h) { t_skip(SW_DLL " not loadable"); return; } } while (0)
 #endif
