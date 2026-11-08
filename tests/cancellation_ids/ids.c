@@ -247,8 +247,8 @@ CHILD(cid_print_child) {
     GUID g;
     if (!GETID() || GETID()(&g) != S_OK) return 1;
     /* encode the first 4 bytes into exit code range is lossy; just write to a file */
-    char path[MAX_PATH];
-    t_tmpfile(path, sizeof path, "cid_child.bin");
+    if (argc < 2) return 3;
+    const char *path = argv[1];   /* the parent's scratch file: the child's own t_tmpdir() is per-pid */
     HANDLE h = CreateFileA(path, GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, 0, NULL);
     if (h == INVALID_HANDLE_VALUE) return 2;
     DWORD n; WriteFile(h, &g, sizeof g, &n, NULL); CloseHandle(h);
@@ -260,7 +260,8 @@ TEST(cid_differs_across_processes) {
     GUID a, b; memset(&a, 0, sizeof a); memset(&b, 0, sizeof b);
     for (int k = 0; k < 2; k++) {
         DeleteFileA(path);
-        EXPECT_EQ(t_run_child("cid_print_child", "", 20000), 0);
+        char arg[MAX_PATH + 4]; snprintf(arg, sizeof arg, "\"%s\"", path);
+        EXPECT_EQ(t_run_child("cid_print_child", arg, 20000), 0);
         HANDLE h = CreateFileA(path, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
         CHECK(h != INVALID_HANDLE_VALUE);
         if (h == INVALID_HANDLE_VALUE) return;
