@@ -1,0 +1,61 @@
+/* Generated from the Windows 10 x64 webauthn.dll export list. X(Name, ordinal, rva, documented)
+   documented: 1 = has a public documentation page, 0 = undocumented/internal. Ordinals are the
+   alphabetical positions 1..56 (export directory Base = 1). */
+#define SWEEP_EXPORTS(X) \
+    X(CryptsvcDllCtrl, 1, 0x20170, 0) \
+    X(I_WebAuthNCtapDecodeGetAssertionRpcResponse, 2, 0xd810, 0) \
+    X(I_WebAuthNCtapDecodeMakeCredentialRpcResponse, 3, 0xb180, 0) \
+    X(I_WebAuthNCtapEncodeGetAssertionRpcRequest, 4, 0xd1f0, 0) \
+    X(I_WebAuthNCtapEncodeMakeCredentialRpcRequest, 5, 0xad60, 0) \
+    X(VirtualChannelGetInstance, 6, 0x20930, 1) \
+    X(WebAuthNAuthenticatorGetAssertion, 7, 0x16780, 1) \
+    X(WebAuthNAuthenticatorMakeCredential, 8, 0x15fe0, 1) \
+    X(WebAuthNCancelCurrentOperation, 9, 0x16ef0, 1) \
+    X(WebAuthNCtapChangeClientPin, 10, 0xc770, 0) \
+    X(WebAuthNCtapChangeClientPinForSelectedDevice, 11, 0xea50, 0) \
+    X(WebAuthNCtapFreeSelectedDeviceInformation, 12, 0xe0e0, 0) \
+    X(WebAuthNCtapGetAssertion, 13, 0xe110, 0) \
+    X(WebAuthNCtapGetSupportedTransports, 14, 0x10210, 0) \
+    X(WebAuthNCtapGetWnfLocalizedString, 15, 0x142f0, 0) \
+    X(WebAuthNCtapIsStopSendCommandError, 16, 0xf980, 0) \
+    X(WebAuthNCtapMakeCredential, 17, 0xca10, 0) \
+    X(WebAuthNCtapManageAuthenticatePin, 18, 0x12f30, 0) \
+    X(WebAuthNCtapManageCancelEnrollFingerprint, 19, 0x136f0, 0) \
+    X(WebAuthNCtapManageChangePin, 20, 0x13230, 0) \
+    X(WebAuthNCtapManageClose, 21, 0x12520, 0) \
+    X(WebAuthNCtapManageDeleteCredential, 22, 0x14260, 0) \
+    X(WebAuthNCtapManageEnrollFingerprint, 23, 0x13460, 0) \
+    X(WebAuthNCtapManageFreeDisplayCredentials, 24, 0x13c70, 0) \
+    X(WebAuthNCtapManageGetDisplayCredentials, 25, 0x13cd0, 0) \
+    X(WebAuthNCtapManageRemoveFingerprints, 26, 0x137c0, 0) \
+    X(WebAuthNCtapManageResetDevice, 27, 0x12cb0, 0) \
+    X(WebAuthNCtapManageSelect, 28, 0x12b70, 0) \
+    X(WebAuthNCtapManageSetPin, 29, 0x130c0, 0) \
+    X(WebAuthNCtapParseAuthenticatorData, 30, 0xf010, 0) \
+    X(WebAuthNCtapResetDevice, 31, 0xc970, 0) \
+    X(WebAuthNCtapRpcGetAssertionUserList, 32, 0xfb40, 0) \
+    X(WebAuthNCtapRpcGetCborCommand, 33, 0xf9e0, 0) \
+    X(WebAuthNCtapRpcSelectGetAssertion, 34, 0xff60, 0) \
+    X(WebAuthNCtapSendCommand, 35, 0xf0b0, 0) \
+    X(WebAuthNCtapSetClientPin, 36, 0xc630, 0) \
+    X(WebAuthNCtapStartDeviceChangeNotify, 37, 0x10680, 0) \
+    X(WebAuthNCtapStopDeviceChangeNotify, 38, 0x10690, 0) \
+    X(WebAuthNCtapVerifyGetAssertion, 39, 0xed50, 0) \
+    X(WebAuthNDecodeAccountInformation, 40, 0x1ca60, 0) \
+    X(WebAuthNDeletePlatformCredential, 41, 0x1cb30, 1) \
+    X(WebAuthNEncodeAccountInformation, 42, 0x1c990, 0) \
+    X(WebAuthNFreeAssertion, 43, 0xe0e0, 1) \
+    X(WebAuthNFreeCredentialAttestation, 44, 0xacf0, 1) \
+    X(WebAuthNFreeDecodedAccountInformation, 45, 0xe0e0, 0) \
+    X(WebAuthNFreeEncodedAccountInformation, 46, 0xe0e0, 0) \
+    X(WebAuthNFreePlatformCredentials, 47, 0x13c70, 0) \
+    X(WebAuthNFreeUserEntityList, 48, 0xe0e0, 0) \
+    X(WebAuthNGetApiVersionNumber, 49, 0x170b0, 1) \
+    X(WebAuthNGetCancellationId, 50, 0x16eb0, 1) \
+    X(WebAuthNGetCoseAlgorithmIdentifier, 51, 0x15ef0, 0) \
+    X(WebAuthNGetCredentialIdFromAuthenticatorData, 52, 0x106a0, 0) \
+    X(WebAuthNGetErrorName, 53, 0xf920, 1) \
+    X(WebAuthNGetPlatformCredentials, 54, 0x1d2d0, 0) \
+    X(WebAuthNGetW3CExceptionDOMError, 55, 0xf950, 1) \
+    X(WebAuthNIsUserVerifyingPlatformAuthenticatorAvailable, 56, 0x1c800, 1) \
+    /* end */
