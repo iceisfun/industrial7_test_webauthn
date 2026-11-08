@@ -25,4 +25,9 @@ static inline int cid_eq(const GUID *a, const GUID *b) { return !memcmp(a, b, si
 static inline int cid_version(const GUID *g) { return (g->Data3 >> 12) & 0xF; }
 static inline int cid_variant_ok(const GUID *g) { return (g->Data4[0] & 0xC0) == 0x80; }
 static inline int cid_cmp(const void *a, const void *b) { return memcmp(a, b, sizeof(GUID)); }
+static inline int cid_in_image(const char *m, const void *p) {
+    const IMAGE_DOS_HEADER *d = (const IMAGE_DOS_HEADER *)m;
+    const IMAGE_NT_HEADERS *n = (const IMAGE_NT_HEADERS *)(m + d->e_lfanew);
+    return (const char *)p > m && (const char *)p < m + n->OptionalHeader.SizeOfImage;
+}
 #endif

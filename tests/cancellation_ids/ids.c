@@ -27,7 +27,7 @@ TEST(cid_not_forwarded) {
     /* address lies inside webauthn.dll's image, not a forwarder string */
     HMODULE m = t_module(CID_MOD);
     char *p = (char *)GETID();
-    CHECK(p > (char *)m && p < (char *)m + 0x100000);
+    CHECK(m != NULL && cid_in_image((const char *)m, p));
 }
 TEST(cid_returns_s_ok) {
     REQUIRE(GETID());
@@ -270,4 +270,38 @@ TEST(cid_differs_across_processes) {
     CHECK(!cid_is_nil(&a) && !cid_is_nil(&b));
     CHECK(!cid_eq(&a, &b));
     DeleteFileA(path);
+}
+
+TEST(cid_not_sequential) {
+    REQUIRE(GETID());
+    /* random ids, not time-ordered: Data1 must not be monotonic over 100 samples */
+    int inc = 0, dec = 0; GUID p, g; CHECK(GETID()(&p) == S_OK);
+    for (int i = 0; i < 100; i++) { CHECK(GETID()(&g) == S_OK); if (g.Data1 > p.Data1) inc++; else if (g.Data1 < p.Data1) dec++; p = g; }
+    CHECK(inc > 0 && dec > 0);
+}
+TEST(cid_text_form_unique_100) {
+    REQUIRE(GETID());
+    char (*s)[40] = (char (*)[40])malloc(100 * 40);
+    if (!s) { CHECK(0); return; }
+    for (int i = 0; i < 100; i++) {
+        GUID g; CHECK(GETID()(&g) == S_OK);
+        snprintf(s[i], 40, "%08lx-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x", g.Data1, g.Data2, g.Data3,
+                 g.Data4[0], g.Data4[1], g.Data4[2], g.Data4[3], g.Data4[4], g.Data4[5], g.Data4[6], g.Data4[7]);
+    }
+    int dup = 0;
+    for (int i = 0; i < 100; i++) for (int j = i + 1; j < 100; j++) if (!strcmp(s[i], s[j])) dup++;
+    EXPECT_EQ(dup, 0);
+    free(s);
+}
+TEST(cid_ordinal_range_edges) {
+    REQUIRE(GETID());
+    SET_ERR(0);
+    CHECK(t_proc_ord(CID_MOD, 57) == NULL);
+    CHECK(t_proc_ord(CID_MOD, 0) == NULL);
+    CHECK(t_proc_ord(CID_MOD, 56) != NULL);
+}
+TEST(cid_ids_all_distinct_from_nil_and_ones_pattern) {
+    REQUIRE(GETID());
+    GUID ones; memset(&ones, 0xFF, sizeof ones);
+    for (int i = 0; i < 200; i++) { GUID g; CHECK(GETID()(&g) == S_OK); CHECK(!cid_eq(&g, &ones)); CHECK(!cid_is_nil(&g)); }
 }

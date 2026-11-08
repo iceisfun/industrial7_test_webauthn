@@ -51,6 +51,7 @@ TEST(free_shared_body_identical_code_folding) {
                a == t_proc_in(CID_MOD, "WebAuthNFreeDecodedAccountInformation") &&
                a == t_proc_in(CID_MOD, "WebAuthNFreeEncodedAccountInformation") &&
                a == t_proc_in(CID_MOD, "WebAuthNCtapFreeSelectedDeviceInformation");
+    /* the reference decomp lists ordinals 12, 43, 45, 46, 48 at one address (identical code folding) */
     t_note("LocalFree-wrapper exports share an address: %d", same);
     FARPROC p = t_proc_in(CID_MOD, "WebAuthNFreePlatformCredentials");
     t_note("FreePlatformCredentials == CtapManageFreeDisplayCredentials: %d", p == t_proc_in(CID_MOD, "WebAuthNCtapManageFreeDisplayCredentials"));
@@ -152,7 +153,7 @@ TEST(free_attestation_repeated_cycles) {
 }
 TEST(free_attestation_other_fields_ignored) {
     REQUIRE(F(WebAuthNFreeCredentialAttestation));
-    /* only +0x38/+0x48/+0x68 are freed; stray values elsewhere (here stack addresses) must be left alone */
+    /* only +0x38/+0x48/+0x68 are freed; stray values elsewhere (here the address of a static) must be left alone */
     unsigned char *p = (unsigned char *)LocalAlloc(LPTR, 0x100);
     CHECK(p != NULL); if (!p) return;
     static int dummy;
@@ -232,4 +233,78 @@ CHILD(free_null_child) {
 TEST(free_null_in_fresh_process) {
     REQUIRE(F(WebAuthNFreeAssertion));
     EXPECT_EQ(t_run_child("free_null_child", "", 20000), 0);
+}
+
+TEST(free_platform_creds_count_zero_array_untouched) {
+    REQUIRE(F(WebAuthNFreePlatformCredentials));
+    /* count 0: no item is freed even though the array holds live blocks; we free them ourselves afterwards */
+    unsigned char *p = (unsigned char *)mk_list(3, 1, 0); CHECK(p != NULL); if (!p) return;
+    void **arr = *(void ***)(p + 8);
+    void *keep[3] = { arr[0], arr[1], arr[2] };
+    *(DWORD *)p = 0;
+    F(WebAuthNFreePlatformCredentials)(p);
+    for (int i = 0; i < 3; i++) { memset(keep[i], 0xEE, 32); LocalFree(keep[i]); }
+    LocalFree(arr);
+}
+TEST(free_platform_creds_count_less_than_array) {
+    REQUIRE(F(WebAuthNFreePlatformCredentials));
+    /* only the first `count` entries are released; later entries remain owned by the caller */
+    unsigned char *p = (unsigned char *)mk_list(4, 1, 0); CHECK(p != NULL); if (!p) return;
+    void **arr = *(void ***)(p + 8);
+    void *l2 = arr[2], *l3 = arr[3];
+    *(DWORD *)p = 2;
+    F(WebAuthNFreePlatformCredentials)(p);
+    memset(l2, 0xEE, 32); memset(l3, 0xEE, 32);
+    LocalFree(l2); LocalFree(l3); LocalFree(arr);
+}
+TEST(free_display_credentials_count_less_than_array) {
+    REQUIRE(F(WebAuthNCtapManageFreeDisplayCredentials));
+    unsigned char *p = (unsigned char *)mk_list(3, 1, 0); CHECK(p != NULL); if (!p) return;
+    void **arr = *(void ***)(p + 8);
+    void *l1 = arr[1], *l2 = arr[2];
+    *(DWORD *)p = 1;
+    F(WebAuthNCtapManageFreeDisplayCredentials)(p);
+    memset(l1, 0xEE, 32); memset(l2, 0xEE, 32);
+    LocalFree(l1); LocalFree(l2); LocalFree(arr);
+}
+TEST(free_display_credentials_null_slots) {
+    REQUIRE(F(WebAuthNCtapManageFreeDisplayCredentials));
+    unsigned char *p = (unsigned char *)mk_list(5, 1, 1); CHECK(p != NULL); if (!p) return;
+    void **arr = *(void ***)(p + 8);
+    F(WebAuthNCtapManageFreeDisplayCredentials)(p);
+    LocalFree(arr);
+}
+TEST(free_display_credentials_count_without_array) {
+    REQUIRE(F(WebAuthNCtapManageFreeDisplayCredentials));
+    void *p = mk_list(7, 0, 0); CHECK(p != NULL); if (p) F(WebAuthNCtapManageFreeDisplayCredentials)(p);
+}
+TEST(free_attestation_sub_alone_each) {
+    REQUIRE(F(WebAuthNFreeCredentialAttestation));
+    for (int m = 1; m <= 4; m <<= 1) {
+        for (int i = 0; i < 50; i++) { void *p = mk_att(m & 1, m & 2, m & 4); if (!p) { CHECK(0); return; } F(WebAuthNFreeCredentialAttestation)(p); }
+    }
+}
+TEST(free_does_not_touch_caller_other_allocations) {
+    REQUIRE(F(WebAuthNFreeAssertion));
+    /* neighbouring live blocks must survive: write and verify after the free */
+    unsigned char *a = (unsigned char *)LocalAlloc(LPTR, 64), *b = (unsigned char *)LocalAlloc(LPTR, 64), *c = (unsigned char *)LocalAlloc(LPTR, 64);
+    CHECK(a && b && c);
+    if (a && b && c) {
+        memset(a, 0x11, 64); memset(c, 0x33, 64);
+        F(WebAuthNFreeAssertion)(b);
+        for (int i = 0; i < 64; i++) { CHECK(a[i] == 0x11); CHECK(c[i] == 0x33); }
+    }
+    if (a) LocalFree(a);
+    if (c) LocalFree(c);
+}
+TEST(free_each_export_resolves_in_module_image) {
+    REQUIRE(F(WebAuthNFreeAssertion));
+    HMODULE m = t_module(CID_MOD);
+    static const char *n[] = {"WebAuthNFreeAssertion","WebAuthNFreeCredentialAttestation","WebAuthNFreePlatformCredentials",
+        "WebAuthNFreeUserEntityList","WebAuthNFreeDecodedAccountInformation","WebAuthNFreeEncodedAccountInformation",
+        "WebAuthNCtapFreeSelectedDeviceInformation","WebAuthNCtapManageFreeDisplayCredentials"};
+    for (unsigned i = 0; i < sizeof n / sizeof n[0]; i++) {
+        FARPROC p = t_proc_in(CID_MOD, n[i]);
+        CHECKF(p != NULL && m != NULL && cid_in_image((const char *)m, (void *)p), "%s", n[i]);
+    }
 }

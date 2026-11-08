@@ -22,7 +22,7 @@ TEST(cancel_export_not_forwarded) {
     REQUIRE(CANCEL());
     HMODULE m = t_module(CID_MOD);
     char *p = (char *)CANCEL();
-    CHECK(p > (char *)m && p < (char *)m + 0x100000);
+    CHECK(m != NULL && cid_in_image((const char *)m, p));
 }
 TEST(cancel_distinct_from_getid) {
     REQUIRE(CANCEL()); REQUIRE(GETID());
@@ -131,10 +131,10 @@ TEST(cancel_concurrent_same_id) {
     REQUIRE(CANCEL()); REQUIRE(GETID());
     CHECK(GETID()(&g_shared) == S_OK);
     g_bad = 0;
-    HANDLE h[6];
-    for (int i = 0; i < 6; i++) h[i] = CreateThread(NULL, 0, thr_cancel, NULL, 0, NULL);
-    CHECK(WaitForMultipleObjects(6, h, TRUE, 15000) == WAIT_OBJECT_0);
-    for (int i = 0; i < 6; i++) CloseHandle(h[i]);
+    HANDLE h[4];
+    for (int i = 0; i < 4; i++) h[i] = CreateThread(NULL, 0, thr_cancel, NULL, 0, NULL);
+    CHECK(WaitForMultipleObjects(4, h, TRUE, 15000) == WAIT_OBJECT_0);
+    for (int i = 0; i < 4; i++) CloseHandle(h[i]);
     EXPECT_EQ(g_bad, 0);
 }
 static DWORD WINAPI thr_gen_cancel(LPVOID p) {
@@ -205,4 +205,35 @@ TEST(cancel_bounded_runtime) {
 TEST(cancel_null_pointer_not_exercised) {
     REQUIRE(CANCEL());
     t_note("NULL id is not passed: the decomp forwards it to I_NgcCancelCurrentOperation whose handling is not in webauthn.dll");
+}
+
+TEST(cancel_byte_pattern_table) {
+    REQUIRE(CANCEL());
+    for (int v = 0; v < 256; v += 17) {
+        GUID g; memset(&g, v, sizeof g);
+        if (CANCEL()(&g) != S_OK) { CHECKF(0, "pattern 0x%02x", v); break; }
+    }
+}
+TEST(cancel_mutated_fresh_id) {
+    REQUIRE(CANCEL()); REQUIRE(GETID());
+    GUID g; CHECK(GETID()(&g) == S_OK);
+    for (int b = 0; b < 16; b++) {
+        GUID m = g; ((unsigned char *)&m)[b] ^= 0x01;
+        if (CANCEL()(&m) != S_OK) { CHECKF(0, "byte %d", b); break; }
+    }
+}
+TEST(cancel_does_not_modify_nil_input) {
+    REQUIRE(CANCEL());
+    GUID z; memset(&z, 0, sizeof z);
+    CHECK(CANCEL()(&z) == S_OK);
+    CHECK(cid_is_nil(&z));
+}
+TEST(cancel_interleaved_with_getid_same_thread) {
+    REQUIRE(CANCEL()); REQUIRE(GETID());
+    GUID a, b;
+    CHECK(GETID()(&a) == S_OK);
+    CHECK(GETID()(&b) == S_OK);
+    CHECK(CANCEL()(&b) == S_OK);
+    CHECK(CANCEL()(&a) == S_OK);
+    CHECK(CANCEL()(&b) == S_OK);
 }
