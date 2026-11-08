@@ -1,6 +1,6 @@
 #include "t.h"
 /* Smallest possible corpus test: load, resolve, invoke, check. Replace/remove after scaffolding. */
-TEST(smoke_module_loads) { CHECK(t_module("webauthn.dll") != NULL); }
+TEST(smoke_module_loads) { if (getenv("T_ALLOW_MISSING_DLL") && !t_module("webauthn.dll")) { t_skip("webauthn.dll not present (Wine)"); return; } CHECK(t_module("webauthn.dll") != NULL); }
 TEST(smoke_getprocaddress_negative) {
     /* Valid negative tests: documented/decomp-verified failures an implementor must reproduce. */
     SET_ERR(0);
