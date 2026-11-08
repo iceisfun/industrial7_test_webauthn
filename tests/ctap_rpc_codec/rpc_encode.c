@@ -434,7 +434,7 @@ TEST(ctaprpc_mc_encode_rpc_request_struct_filled) {
     REQUIRE(UN(I_WebAuthNCtapEncodeMakeCredentialRpcRequest));
     /* The _CTAPCBOR_RPC_REQUEST out structure: version 1 at +0, command at +4, flags at +8, timeout at +0xC,
      * transaction GUID at +0x10, CTAP request length at +0x88 and pointer at +0x90. */
-    mc_args a; mc_args_init(&a); static BYTE rq[0x200]; memset(rq, 0xCC, sizeof rq);
+    mc_args a; mc_args_init(&a); static BYTE rq[0x200]; memset(rq, 0, sizeof rq); /* out struct must start zeroed: Windows dereferences stale pointers in it (0xCC poison -> access violation) */
     GUID g = CRC_TXID; ULONG cb = 0; BYTE *pb = NULL;
     LONG hr = UN(I_WebAuthNCtapEncodeMakeCredentialRpcRequest)(&g, 5, 0, 0, &a.rp, &a.user, &a.cps, &a.cd, mc_opts(1, 4321), NULL, NULL, rq, &cb, &pb);
     CHECK(hr == 0);
@@ -457,7 +457,7 @@ TEST(ctaprpc_mc_encode_repeated_calls_no_leak) {
     for (int i = 0; i < 20000; i++) { enc_res r = mc_encode(&a, 5, 0, 0, NULL, NULL, NULL); if (r.hr != 0 || r.cb != ref) bad++; enc_free(&r); }
     SIZE_T after = crc_private_bytes();
     CHECKF(bad == 0, "%d bad results", bad);
-    if (before && after) { CHECKF(after < before + 3 * 1024 * 1024, "grew %lld", (long long)after - (long long)before); t_note("mc encode x20000 delta=%lld", (long long)after - (long long)before); }
+    if (before && after) { CHECKF(after < before + 3 * 1024 * 1024, "grew %lld", (long long)after - (long long)before); t_note("mc encode x20000 private-bytes growth within bound"); }
 }
 TEST(ctaprpc_mc_encode_large_user_id) {
     REQUIRE(UN(I_WebAuthNCtapEncodeMakeCredentialRpcRequest));
@@ -557,15 +557,17 @@ TEST(ctaprpc_ga_encode_command_and_txid) {
 TEST(ctaprpc_ga_encode_request_begins_with_ctap_getassertion) {
     REQUIRE(UN(I_WebAuthNCtapEncodeGetAssertionRpcRequest));
     rpcmap m; enc_res r = ga_ok(&m, L"example.com", 0, 0, 0, NULL);
-    if (r.pb && m.req) { CHECK(m.reqlen > 2); CHECK(m.req[0] == 0x02); CHECK(m.req[1] == 0xA2); }
+    if (r.pb && m.req) { CHECK(m.reqlen > 2); CHECK(m.req[0] == 0x02); CHECK(m.req[1] == 0xA3); /* Windows 10 also emits key 5 (options) */ }
     enc_free(&r);
 }
 TEST(ctaprpc_ga_encode_request_keys_rpid_then_hash) {
+    /* Windows 10 emits keys 1 (rpId), 2 (clientDataHash) and 5 (options map). */
     REQUIRE(UN(I_WebAuthNCtapEncodeGetAssertionRpcRequest));
     rpcmap m; enc_res r = ga_ok(&m, L"example.com", 0, 0, 0, NULL);
     if (r.pb && m.req) {
         char keys[32]; size_t end = 0; int n = cr_int_keys(m.req + 1, m.reqlen - 1, keys, sizeof keys, &end);
-        CHECK(n == 2); EXPECT_STR(keys, "1,2"); CHECK(end == m.reqlen - 1);
+        CHECK(n == 3); EXPECT_STR(keys, "1,2,5"); CHECK(end == m.reqlen - 1);
+        { size_t o5, l5, p5; citem i5; if (cr_int_find(m.req + 1, m.reqlen - 1, 5, &o5, &l5)) { p5 = o5; if (!cr_head(m.req + 1, m.reqlen - 1, &p5, &i5)) CHECK(i5.major == 5); } else CHECK(0); }
         size_t o, l; CHECK(cr_int_find(m.req + 1, m.reqlen - 1, 1, &o, &l));
         size_t pos = o; citem it;
         if (!cr_head(m.req + 1, m.reqlen - 1, &pos, &it)) { CHECK(it.major == 3); CHECK(it.hlen == 11 && !memcmp(it.data, "example.com", 11)); }
@@ -644,7 +646,7 @@ TEST(ctaprpc_ga_encode_deterministic_and_owned) {
 }
 TEST(ctaprpc_ga_encode_struct_filled) {
     REQUIRE(UN(I_WebAuthNCtapEncodeGetAssertionRpcRequest));
-    ga_args a; ga_args_init(&a); static BYTE rq[0x200]; memset(rq, 0xCC, sizeof rq);
+    ga_args a; ga_args_init(&a); static BYTE rq[0x200]; memset(rq, 0, sizeof rq); /* out struct must start zeroed: Windows dereferences stale pointers in it (0xCC poison -> access violation) */
     GUID g = CRC_TXID; ULONG cb = 0; BYTE *pb = NULL;
     LONG hr = UN(I_WebAuthNCtapEncodeGetAssertionRpcRequest)(&g, 6, 0, 0, L"example.com", &a.cd, mc_opts(1, 777), NULL, NULL, 0, NULL, rq, &cb, &pb);
     CHECK(hr == 0);

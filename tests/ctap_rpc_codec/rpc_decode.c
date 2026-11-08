@@ -454,7 +454,7 @@ TEST(ctaprpc_mcdec_repeated_calls_no_leak) {
     for (int i = 0; i < 20000; i++) { mcd_res r = mcd_call(env.b, env.n, 0); if (r.hr != 0) bad++; mcd_free(&r); }
     SIZE_T after = crc_private_bytes();
     CHECKF(bad == 0, "%d failures", bad);
-    if (before && after) { CHECKF(after < before + 3 * 1024 * 1024, "grew %lld", (long long)after - (long long)before); t_note("mcdec x20000 delta=%lld", (long long)after - (long long)before); }
+    if (before && after) { CHECKF(after < before + 3 * 1024 * 1024, "grew %lld", (long long)after - (long long)before); t_note("mcdec x20000 private-bytes growth within bound"); }
 }
 TEST(ctaprpc_mcdec_failure_path_no_leak) {
     REQUIRE(UN(I_WebAuthNCtapDecodeMakeCredentialRpcResponse)); init_ads();
@@ -786,7 +786,7 @@ TEST(ctaprpc_gadec_repeated_calls_no_leak) {
     for (int i = 0; i < 20000; i++) { gad_res r = gad_call(env.b, env.n, 0, NULL, 0); if (r.hr != 0) bad++; gad_free(&r); }
     SIZE_T after = crc_private_bytes();
     CHECKF(bad == 0, "%d failures", bad);
-    if (before && after) { CHECKF(after < before + 3 * 1024 * 1024, "grew %lld", (long long)after - (long long)before); t_note("gadec x20000 delta=%lld", (long long)after - (long long)before); }
+    if (before && after) { CHECKF(after < before + 3 * 1024 * 1024, "grew %lld", (long long)after - (long long)before); t_note("gadec x20000 private-bytes growth within bound"); }
 }
 TEST(ctaprpc_gadec_array_path_no_leak) {
     REQUIRE(UN(I_WebAuthNCtapDecodeGetAssertionRpcResponse)); init_ads();
