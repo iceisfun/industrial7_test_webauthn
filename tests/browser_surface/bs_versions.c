@@ -75,8 +75,9 @@ TEST(bs_mc_options_version_zero_is_rejected_at_entry) {
     CHECKF(hr == BS_NTE_INVALID_PARAMETER, "got 0x%08lx", (unsigned long)hr);
     CHECKF(e >= 0 && e <= 8, "version 0 reads 0x%x", e);
 }
-/* mode 1: the local fault is a bad list entry (cbId 0), valid COSE parameters. Only versions where the
- * version-matching list form is known to be rejected locally (1,2 legacy list; 3..6 exclude list). */
+/* mode 1: a second pass over the options read extent for the versions whose list form is attached (1,2 legacy
+ * list; 3..6 exclude list). Every call now carries both independent faults (algorithm 0 and the zero-length
+ * list entry), so mode 1 re-measures the same extent as mode 0 for these versions. */
 TEST(bs_mc_options_each_version_list_fault) {
     NEED_MC;
     for (DWORD v = 1; v <= 6; v++) probe_one('m', "opts", v, 1, 0x100, bs_mc_end[v], BS_ENC_FAIL, 1);

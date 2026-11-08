@@ -1,5 +1,6 @@
 /* Extension identifiers in the option structures (hmac-secret, credProtect, credBlob, minPinLength, largeBlob,
- * prf and others browsers use). Every call carries a local fault (algorithm 0), so the observable facts are
+ * prf and others browsers use). Every call carries the two local faults of run_make (algorithm 0 and a zero-length
+ * exclude-list entry), so the observable facts are
  * which identifiers make the DLL read the extension payload before the call ends, and how much of it.
  *   NOTE ext <id> payload_read=0x..   (0 = payload not read on this path) */
 #include "bs.h"

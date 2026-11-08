@@ -75,10 +75,14 @@ static int run_make(const char *kind, DWORD ver, int mode, int S) {
     BS_CLIENT_DATA cd = { 1, (DWORD)strlen(js), g_json, L"SHA-256" };
     const BS_RP *prp = &rp; const BS_USER *puser = &user; const BS_CLIENT_DATA *pcd = &cd; const BS_MC_OPTIONS *popts = NULL;
 
-    /* algorithm 0 always ends the call locally; the bad list entry of options mode 1 is a second, independent
-     * local rejection so the call cannot reach the service even if one of the two is accepted on some build */
+    /* Two independent local rejections so the call cannot reach the service even if one is accepted on some
+     * build: (1) a COSE parameter with algorithm 0, (2) a zero-length credential id in the exclude list. */
     int is_opts = !strcmp(kind, "opts");
     cp[0].lAlg = 0;
+    g_ex[0] = (BS_CRED_EX){ 1, 0, g_credid, L"public-key", 0 };
+    g_exp[0] = &g_ex[0];
+    g_list.cCredentials = 1; g_list.ppCredentials = g_exp;
+    g_leg[0] = (BS_CRED){ 1, 0, g_credid, L"public-key" };
 
     g_mo.dwTimeoutMilliseconds = 30000;
     g_mo.pCancellationId = &g_cancel;
@@ -93,10 +97,8 @@ static int run_make(const char *kind, DWORD ver, int mode, int S) {
     }
     else if (is_opts) {
         g_mo.dwVersion = ver;
-        if (mode == 1) {
-            if (ver <= 2) { g_leg[0] = (BS_CRED){ 1, 0, g_credid, L"public-key" }; g_mo.CredentialList.cCredentials = 1; g_mo.CredentialList.pCredentials = g_leg; }
-            else { g_ex[0] = (BS_CRED_EX){ 1, 0, g_credid, L"public-key", 0 }; g_exp[0] = &g_ex[0]; g_list.cCredentials = 1; g_list.ppCredentials = g_exp; g_mo.pExcludeCredentialList = &g_list; }
-        }
+        if (ver <= 2) { g_mo.CredentialList.cCredentials = 1; g_mo.CredentialList.pCredentials = g_leg; }
+        else { g_mo.pExcludeCredentialList = &g_list; }
         popts = place(&g_mo, sizeof g_mo, S);
     }
     else if (!strcmp(kind, "credex")) {
@@ -107,15 +109,16 @@ static int run_make(const char *kind, DWORD ver, int mode, int S) {
     }
     else if (!strcmp(kind, "browser")) {
         /* the shape a browser integration builds: every field its options version has, cancellation id from the
-         * DLL, an exclude list, extensions, hints, PRF salts; the algorithm-0 fault still ends the call locally */
+         * DLL, an exclude list, extensions, hints, PRF salts; the two local faults still end the call locally */
         static BS_CRED_EX ex2[2]; static BS_CRED_EX *exp2[2]; static BS_CRED_LIST l2;
         static BS_EXTENSION ex_[2]; static DWORD cprot[2] = { 2, 1 }; static DWORD hmac = 1;
         static LPCWSTR hints[2] = { L"security-key", L"hybrid" };
         static BS_HMAC_SALT salt; static BYTE s1[32], s2[32];
         WebAuthNGetCancellationId_pfn gc = UN(WebAuthNGetCancellationId);
         if (gc) gc(&g_cancel);
-        for (int i = 0; i < 2; i++) { ex2[i] = (BS_CRED_EX){ 1, 32, g_credid, L"public-key", 1u << i }; exp2[i] = &ex2[i]; }
+        for (int i = 0; i < 2; i++) { ex2[i] = (BS_CRED_EX){ 1, i ? 32 : 0, g_credid, L"public-key", 1u << i }; exp2[i] = &ex2[i]; }
         l2.cCredentials = 2; l2.ppCredentials = exp2;
+        g_mo.CredentialList.cCredentials = 1; g_mo.CredentialList.pCredentials = g_leg;   /* legacy form, options v1/v2 */
         ex_[0] = (BS_EXTENSION){ L"credProtect", 8, cprot }; ex_[1] = (BS_EXTENSION){ L"hmac-secret", 4, &hmac };
         salt.cbFirst = 32; salt.pbFirst = s1; salt.cbSecond = 32; salt.pbSecond = s2;
         g_mo.dwVersion = ver; g_mo.dwTimeoutMilliseconds = 60000;
@@ -130,9 +133,15 @@ static int run_make(const char *kind, DWORD ver, int mode, int S) {
         if (ver >= BS_NEXT) return BS_XC_BAD_ARGS;
         void *pv = place(g_credid, sizeof g_credid, S);
         g_extn[0].pwszExtensionIdentifier = bs_ext_ids[ver]; g_extn[0].cbExtension = 16; g_extn[0].pvExtension = pv;
-        g_mo.dwVersion = 1; g_mo.Extensions.cExtensions = 1; g_mo.Extensions.pExtensions = g_extn; popts = &g_mo;
+        g_mo.dwVersion = 1; g_mo.Extensions.cExtensions = 1; g_mo.Extensions.pExtensions = g_extn;
+        g_mo.CredentialList.cCredentials = 1; g_mo.CredentialList.pCredentials = g_leg;   /* legacy form, options v1 */
+        popts = &g_mo;
     }
     else return BS_XC_BAD_ARGS;
+
+    /* kinds whose structure is probed directly (rp/user/cd/cosep) leave options NULL; give them a minimal
+     * v4 options carrying the bad exclude list so the second fault is present there too. */
+    if (!popts) { g_mo.dwVersion = 4; g_mo.pExcludeCredentialList = &g_list; popts = &g_mo; }
 
     WebAuthNAuthenticatorMakeCredential_pfn fn = UN(WebAuthNAuthenticatorMakeCredential);
     if (!fn) return BS_XC_NO_EXPORT;
@@ -151,20 +160,22 @@ static int run_get(const char *kind, DWORD ver, int mode, int S) {
     BS_CLIENT_DATA cd = { 1, (DWORD)strlen(js), g_json, L"SHA-256" };
     const BS_CLIENT_DATA *pcd = &cd; const BS_GA_OPTIONS *popts = NULL;
     int is_opts = !strcmp(kind, "opts");
-    /* the lone surrogate relying-party id is always a local rejection; credential entries with a zero-length id
-     * add a second one so the call cannot reach the service even if one of the two is accepted on some build */
+    /* Two independent local rejections so the call cannot reach the service even if one is accepted on some
+     * build: (1) a lone-surrogate relying-party id, (2) a zero-length credential id in the allow list. */
     rpid = bad_rp;
+    g_ex[0] = (BS_CRED_EX){ 1, 0, g_credid, L"public-key", 0 };
+    g_exp[0] = &g_ex[0];
+    g_list.cCredentials = 1; g_list.ppCredentials = g_exp;
+    g_leg[0] = (BS_CRED){ 1, 0, g_credid, L"public-key" };
 
     g_go.dwTimeoutMilliseconds = 30000;
     g_go.pCancellationId = &g_cancel;
 
-    if (!strcmp(kind, "cd")) { cd.dwVersion = ver; pcd = place(&cd, sizeof cd, S); g_go.dwVersion = 4; popts = &g_go; }
+    if (!strcmp(kind, "cd")) { cd.dwVersion = ver; pcd = place(&cd, sizeof cd, S); g_go.dwVersion = 4; g_go.pAllowCredentialList = &g_list; popts = &g_go; }
     else if (is_opts) {
         g_go.dwVersion = ver;
-        if (mode == 1) {
-            if (ver <= 3) { g_leg[0] = (BS_CRED){ 1, 0, g_credid, L"public-key" }; g_go.CredentialList.cCredentials = 1; g_go.CredentialList.pCredentials = g_leg; }
-            else { g_ex[0] = (BS_CRED_EX){ 1, 0, g_credid, L"public-key", 0 }; g_exp[0] = &g_ex[0]; g_list.cCredentials = 1; g_list.ppCredentials = g_exp; g_go.pAllowCredentialList = &g_list; }
-        }
+        if (ver <= 3) { g_go.CredentialList.cCredentials = 1; g_go.CredentialList.pCredentials = g_leg; }
+        else { g_go.pAllowCredentialList = &g_list; }
         popts = place(&g_go, sizeof g_go, S);
     }
     else if (!strcmp(kind, "cred")) {
@@ -182,8 +193,9 @@ static int run_get(const char *kind, DWORD ver, int mode, int S) {
         static LPCWSTR hints[1] = { L"client-device" }; static BOOL used_appid = 0x55;
         WebAuthNGetCancellationId_pfn gc = UN(WebAuthNGetCancellationId);
         if (gc) gc(&g_cancel);
-        for (int i = 0; i < 2; i++) { ex2[i] = (BS_CRED_EX){ 1, 32, g_credid, L"public-key", 0xF }; exp2[i] = &ex2[i]; }
+        for (int i = 0; i < 2; i++) { ex2[i] = (BS_CRED_EX){ 1, i ? 32 : 0, g_credid, L"public-key", 0xF }; exp2[i] = &ex2[i]; }
         l2.cCredentials = 2; l2.ppCredentials = exp2;
+        g_go.CredentialList.cCredentials = 1; g_go.CredentialList.pCredentials = g_leg;   /* legacy form, options v1..v3 */
         g_go.dwVersion = ver; g_go.dwTimeoutMilliseconds = 60000; g_go.dwUserVerificationRequirement = 2; g_go.dwAuthenticatorAttachment = 0;
         g_go.pwszU2fAppId = L"https://example.com/app-id"; g_go.pbU2fAppId = &used_appid;
         g_go.pAllowCredentialList = &l2; g_go.bBrowserInPrivateMode = 1;

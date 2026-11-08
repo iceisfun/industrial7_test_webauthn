@@ -1,9 +1,10 @@
 /* browser_surface: the entry points and argument shapes that browser integrations of webauthn.dll use.
  *
  * Nothing here reaches UI or an authenticator. Every call to WebAuthNAuthenticatorMakeCredential /
- * WebAuthNAuthenticatorGetAssertion is made in a child process (timeout) and carries at least one fault
- * that the DLL rejects locally (a COSE parameter with algorithm 0, or an RP id that is not valid UTF-16, or
- * a list entry with a zero-length credential id) so that the call can never be sent to the service.
+ * WebAuthNAuthenticatorGetAssertion is made in a child process (timeout) and carries two independent faults
+ * that the DLL rejects locally (MakeCredential: a COSE parameter with algorithm 0 plus a zero-length exclude
+ * list entry; GetAssertion: an RP id that is not valid UTF-16 plus a zero-length allow list entry) so that the
+ * call can never be sent to the service even if one of the two is accepted on some build.
  *
  * Structure-read probing: a structure under test is placed at the very end of a committed page whose
  * successor page is PAGE_NOACCESS and only its first S bytes exist. A read beyond S raises an access
@@ -103,8 +104,9 @@ extern const unsigned bs_ga_end[10];
 
 /* ---- guarded probe ----
  * api 'm' (MakeCredential) or 'g' (GetAssertion); kind names the structure placed on the guard page.
- * mode 0: only the local fault (alg 0 / bad RP id); mode 1: the fault is a bad list entry, used where the
- * version-matching list form is shown to be rejected locally.
+ * Every call carries the two independent faults above (algorithm 0 / bad RP id, plus a zero-length
+ * exclude/allow list entry); `mode` is retained for the existing test invocations and gives the same two
+ * faults and the same read extent in both values.
  * Result: bytes read (4-byte granularity), or a negative BS_X_* value. *hr_full gets the HRESULT of the call
  * with the whole structure readable. */
 #define BS_X_FAULT_AT_MAX  (-1)    /* still faults when `maxS` bytes are readable */

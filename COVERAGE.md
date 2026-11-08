@@ -39,8 +39,9 @@ Structure-read probing places one structure at the end of a committed page whose
 with only its first S bytes present. A vectored exception handler in the child process (first chance, so
 a handler inside the DLL cannot hide the fault) reports the access violation. The smallest S for which the call
 returns normally is the number of bytes the DLL reads (4-byte granularity) before the call ends with its local
-rejection. Every call carries a fault that is rejected locally (COSE algorithm 0, an RP id that is not valid
-UTF-16, or a list entry with a zero-length credential id), so no probe can reach UI, the service or a device.
+rejection. Every call carries two independent faults that are rejected locally (MakeCredential: COSE
+algorithm 0 and a zero-length exclude-list entry; GetAssertion: an RP id that is not valid UTF-16 and a
+zero-length allow-list entry), so no probe can reach UI, the service or a device even if one fault is accepted.
 Rows are logged as `NOTE table <m|g> <kind> v<version> mode<n> read=0x.. declared_end=0x.. hr=0x..`. Hard checks
 are the build-independent invariants (a documented version is never read beyond its documented size, versions
 are accepted or rejected with the same HRESULT, read size is monotonic in the version, the output pointer is
