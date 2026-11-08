@@ -90,7 +90,7 @@ typedef struct {
     BYTE cj[256]; ULONG cjLen;
     BYTE chash[32];
     BYTE aa[160]; ULONG aaLen;          /* assertion authenticator data */
-    BYTE sig[96]; ULONG sigLen;         /* DER signature */
+    BYTE sig[192]; ULONG sigLen;         /* DER signature */
     BYTE ca[700]; ULONG caLen;          /* credential (attestation) authenticator data */
     ULONG caKeyOff, caKeyLen;           /* position of the COSE key inside ca */
 } cd_vec;
