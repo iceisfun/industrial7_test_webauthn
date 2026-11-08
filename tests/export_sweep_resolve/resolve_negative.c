@@ -2,7 +2,8 @@
  * and the one export that is safe to call without arguments (WebAuthNGetApiVersionNumber). */
 #include "sweep.h"
 
-#define ERR_PNF ERROR_PROC_NOT_FOUND   /* 127: STATUS_PROCEDURE_NOT_FOUND mapped by the loader */
+#define ERR_PNF ERROR_PROC_NOT_FOUND   /* 127: STATUS_PROCEDURE_NOT_FOUND mapped by the loader (unknown names) */
+#define ERR_ORD ERROR_INVALID_ORDINAL  /* 182: Windows 10 22H2 reports an out-of-range ordinal this way, not 127 */
 
 /* ---- ordinals outside 1..56 -------------------------------------------- */
 static void ord_fails(unsigned ord) {
@@ -10,7 +11,7 @@ static void ord_fails(unsigned ord) {
     SET_ERR(0);
     FARPROC p = GetProcAddress(h, (LPCSTR)(ULONG_PTR)ord);
     CHECKF(p == NULL, "ordinal %u resolved", ord);
-    EXPECT_ERR(ERR_PNF);
+    EXPECT_ERR(ERR_ORD);
 }
 #define ORD_TEST(n) TEST(export_sweep_resolve_ordinal_##n##_not_found) { ord_fails(n); }
 ORD_TEST(57) ORD_TEST(58) ORD_TEST(60) ORD_TEST(64) ORD_TEST(100) ORD_TEST(255) ORD_TEST(256)
