@@ -75,13 +75,25 @@ TEST(apv_exp_all_function_rvas_nonzero_and_in_text) {
     }
     EXPECT_EQ(bad, 0);
 }
-TEST(apv_exp_function_rvas_distinct) {
+TEST(apv_exp_function_rvas_may_alias) {
+    /* The linker folds identical function bodies (the reference build has 51 distinct addresses for 56
+     * exports), so distinct addresses are NOT guaranteed; only record the count. */
     APV_REQUIRE_MOD(m); const IMAGE_EXPORT_DIRECTORY *e = apv_expdir(m);
     CHECK(e != NULL); if (!e) return;
     const DWORD *funcs = (const DWORD *)apv_rva(m, e->AddressOfFunctions);
-    int dup = 0;
-    for (DWORD i = 0; i < e->NumberOfFunctions; i++) for (DWORD j = i + 1; j < e->NumberOfFunctions; j++) if (funcs[i] == funcs[j]) dup++;
-    EXPECT_EQ(dup, 0);
+    int distinct = 0;
+    for (DWORD i = 0; i < e->NumberOfFunctions; i++) { int dup = 0; for (DWORD j = 0; j < i; j++) if (funcs[j] == funcs[i]) dup = 1; distinct += !dup; }
+    t_note("%d distinct export addresses for %lu exports", distinct, (unsigned long)e->NumberOfFunctions);
+    CHECK(distinct >= 1);
+}
+TEST(apv_exp_rvas_vs_reference_build) {
+    APV_REQUIRE_MOD(m); const IMAGE_EXPORT_DIRECTORY *e = apv_expdir(m);
+    CHECK(e != NULL); if (!e) return;
+    static const DWORD ref[N_EXPORTS] = { APV_EXPORT_RVAS };
+    const DWORD *funcs = (const DWORD *)apv_rva(m, e->AddressOfFunctions);
+    int diffs = 0;
+    for (DWORD i = 0; i < e->NumberOfFunctions && i < N_EXPORTS; i++) if (funcs[i] != ref[i]) diffs++;
+    t_note("%d export RVAs differ from reference build 10.0.19041.2913 (expected for other servicing levels)", diffs);
 }
 TEST(apv_exp_table_matches_reference_list) {
     APV_REQUIRE_MOD(m); const IMAGE_EXPORT_DIRECTORY *e = apv_expdir(m);

@@ -427,3 +427,21 @@ TEST(apv_iu_child_worker_thread_then_exit) {
     APV_REQUIRE_MOD(m);
     EXPECT_EQ(t_run_child("apv_iu_child_thread_exit", "", 30000), 0);
 }
+
+/* The call is safe to repeat while another thread queries the API version at the same time. */
+static DWORD WINAPI iu_mix_ver(LPVOID p) { iu_ctx *c = p; for (int i = 0; i < 50; i++) if (apv_getver()() > 2) c->diff++; return 0; }
+TEST(apv_iu_concurrent_with_version_query) {
+    APV_REQUIRE_MOD(m);
+    BOOL base = 0; iu_call(&base);
+    iu_ctx c; memset(&c, 0, sizeof c); c.rounds = 10;
+    HANDLE h[2];
+    h[0] = CreateThread(NULL, 0, iu_worker, &c, 0, NULL);
+    iu_ctx d; memset(&d, 0, sizeof d);
+    h[1] = CreateThread(NULL, 0, iu_mix_ver, &d, 0, NULL);
+    CHECK(h[0] && apv_join(h[0], 20000));
+    CHECK(h[1] && apv_join(h[1], 20000));
+    EXPECT_EQ(c.bad_hr, 0);
+    EXPECT_EQ(c.diff, 0);
+    EXPECT_EQ(d.diff, 0);
+    EXPECT_EQ(c.first, base);
+}

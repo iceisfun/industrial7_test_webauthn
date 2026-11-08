@@ -217,6 +217,7 @@ TEST(apv_ver_preserves_thread_com_state_uninitialized) {
     /* The call must not initialise COM on the caller: CoInitializeEx(STA) afterwards on the same fresh
      * thread is S_OK (not S_FALSE, not RPC_E_CHANGED_MODE). */
     REQUIRE(U(WebAuthNGetApiVersionNumber));
+    if (apv_is_remote_session()) { t_skip("remote session may touch COM"); return; }
     ver_com_ctx c = { COINIT_APARTMENTTHREADED, 0, E_FAIL, 0, 0 };
     HANDLE h = CreateThread(NULL, 0, ver_com_probe, &c, 0, NULL);
     CHECK(h && apv_join(h, 10000));
