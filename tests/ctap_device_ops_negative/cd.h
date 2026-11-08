@@ -10,6 +10,7 @@
 #include <bcrypt.h>
 
 typedef DWORD CDHR;   /* HRESULT-like result compared as an unsigned 32-bit value */
+#define SENT 0xCCCCCCCCu
 
 /* ---- result codes seen on the early-failure paths ---- */
 #define CD_NTE_INVALID_PARAMETER   0x80090027u   /* NTE_INVALID_PARAMETER */
