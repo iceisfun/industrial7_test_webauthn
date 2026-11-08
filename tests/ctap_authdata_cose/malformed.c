@@ -126,9 +126,12 @@ TEST(ctap_authdata_cose_mal_map_23_entries_ok) {
 
 TEST(ctap_authdata_cose_mal_array_as_key_item) {
     NEED_ALL();
-    /* the structural check accepts a CBOR array head as well as a map head */
-    raw_note("80", "empty array");
-    raw_note("82 01 02", "array of two ints");
+    /* the structural check (item type byte must be array 0x80 or map 0xA0) accepts an array head as well as a map head;
+     * contents are skipped exactly like a map's */
+    raw_ok("80", "empty array");
+    raw_ok("82 01 02", "array of two ints");
+    raw_ok("83 A0 80 61 78", "array of map, array, tstr");
+    raw_fail("82 01", "array with a missing element");
 }
 
 /* ---- items that are not a map/array: rejected ------------------------------ */
