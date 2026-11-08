@@ -1,0 +1,394 @@
+[
+{
+"name": "CryptsvcDllCtrl",
+"ordinal": 1,
+"rva": 131440,
+"forwarder": null,
+"ref": "webauthn.dll!0x20170"
+},
+{
+"name": "I_WebAuthNCtapDecodeGetAssertionRpcResponse",
+"ordinal": 2,
+"rva": 55312,
+"forwarder": null,
+"ref": "webauthn.dll!0xd810"
+},
+{
+"name": "I_WebAuthNCtapDecodeMakeCredentialRpcResponse",
+"ordinal": 3,
+"rva": 45440,
+"forwarder": null,
+"ref": "webauthn.dll!0xb180"
+},
+{
+"name": "I_WebAuthNCtapEncodeGetAssertionRpcRequest",
+"ordinal": 4,
+"rva": 53744,
+"forwarder": null,
+"ref": "webauthn.dll!0xd1f0"
+},
+{
+"name": "I_WebAuthNCtapEncodeMakeCredentialRpcRequest",
+"ordinal": 5,
+"rva": 44384,
+"forwarder": null,
+"ref": "webauthn.dll!0xad60"
+},
+{
+"name": "VirtualChannelGetInstance",
+"ordinal": 6,
+"rva": 133424,
+"forwarder": null,
+"ref": "webauthn.dll!0x20930"
+},
+{
+"name": "WebAuthNAuthenticatorGetAssertion",
+"ordinal": 7,
+"rva": 92032,
+"forwarder": null,
+"ref": "webauthn.dll!0x16780"
+},
+{
+"name": "WebAuthNAuthenticatorMakeCredential",
+"ordinal": 8,
+"rva": 90080,
+"forwarder": null,
+"ref": "webauthn.dll!0x15fe0"
+},
+{
+"name": "WebAuthNCancelCurrentOperation",
+"ordinal": 9,
+"rva": 93936,
+"forwarder": null,
+"ref": "webauthn.dll!0x16ef0"
+},
+{
+"name": "WebAuthNCtapChangeClientPin",
+"ordinal": 10,
+"rva": 51056,
+"forwarder": null,
+"ref": "webauthn.dll!0xc770"
+},
+{
+"name": "WebAuthNCtapChangeClientPinForSelectedDevice",
+"ordinal": 11,
+"rva": 59984,
+"forwarder": null,
+"ref": "webauthn.dll!0xea50"
+},
+{
+"name": "WebAuthNCtapFreeSelectedDeviceInformation",
+"ordinal": 12,
+"rva": 57568,
+"forwarder": null,
+"ref": "webauthn.dll!0xe0e0"
+},
+{
+"name": "WebAuthNCtapGetAssertion",
+"ordinal": 13,
+"rva": 57616,
+"forwarder": null,
+"ref": "webauthn.dll!0xe110"
+},
+{
+"name": "WebAuthNCtapGetSupportedTransports",
+"ordinal": 14,
+"rva": 66064,
+"forwarder": null,
+"ref": "webauthn.dll!0x10210"
+},
+{
+"name": "WebAuthNCtapGetWnfLocalizedString",
+"ordinal": 15,
+"rva": 82672,
+"forwarder": null,
+"ref": "webauthn.dll!0x142f0"
+},
+{
+"name": "WebAuthNCtapIsStopSendCommandError",
+"ordinal": 16,
+"rva": 63872,
+"forwarder": null,
+"ref": "webauthn.dll!0xf980"
+},
+{
+"name": "WebAuthNCtapMakeCredential",
+"ordinal": 17,
+"rva": 51728,
+"forwarder": null,
+"ref": "webauthn.dll!0xca10"
+},
+{
+"name": "WebAuthNCtapManageAuthenticatePin",
+"ordinal": 18,
+"rva": 77616,
+"forwarder": null,
+"ref": "webauthn.dll!0x12f30"
+},
+{
+"name": "WebAuthNCtapManageCancelEnrollFingerprint",
+"ordinal": 19,
+"rva": 79600,
+"forwarder": null,
+"ref": "webauthn.dll!0x136f0"
+},
+{
+"name": "WebAuthNCtapManageChangePin",
+"ordinal": 20,
+"rva": 78384,
+"forwarder": null,
+"ref": "webauthn.dll!0x13230"
+},
+{
+"name": "WebAuthNCtapManageClose",
+"ordinal": 21,
+"rva": 75040,
+"forwarder": null,
+"ref": "webauthn.dll!0x12520"
+},
+{
+"name": "WebAuthNCtapManageDeleteCredential",
+"ordinal": 22,
+"rva": 82528,
+"forwarder": null,
+"ref": "webauthn.dll!0x14260"
+},
+{
+"name": "WebAuthNCtapManageEnrollFingerprint",
+"ordinal": 23,
+"rva": 78944,
+"forwarder": null,
+"ref": "webauthn.dll!0x13460"
+},
+{
+"name": "WebAuthNCtapManageFreeDisplayCredentials",
+"ordinal": 24,
+"rva": 81008,
+"forwarder": null,
+"ref": "webauthn.dll!0x13c70"
+},
+{
+"name": "WebAuthNCtapManageGetDisplayCredentials",
+"ordinal": 25,
+"rva": 81104,
+"forwarder": null,
+"ref": "webauthn.dll!0x13cd0"
+},
+{
+"name": "WebAuthNCtapManageRemoveFingerprints",
+"ordinal": 26,
+"rva": 79808,
+"forwarder": null,
+"ref": "webauthn.dll!0x137c0"
+},
+{
+"name": "WebAuthNCtapManageResetDevice",
+"ordinal": 27,
+"rva": 76976,
+"forwarder": null,
+"ref": "webauthn.dll!0x12cb0"
+},
+{
+"name": "WebAuthNCtapManageSelect",
+"ordinal": 28,
+"rva": 76656,
+"forwarder": null,
+"ref": "webauthn.dll!0x12b70"
+},
+{
+"name": "WebAuthNCtapManageSetPin",
+"ordinal": 29,
+"rva": 78016,
+"forwarder": null,
+"ref": "webauthn.dll!0x130c0"
+},
+{
+"name": "WebAuthNCtapParseAuthenticatorData",
+"ordinal": 30,
+"rva": 61456,
+"forwarder": null,
+"ref": "webauthn.dll!0xf010"
+},
+{
+"name": "WebAuthNCtapResetDevice",
+"ordinal": 31,
+"rva": 51568,
+"forwarder": null,
+"ref": "webauthn.dll!0xc970"
+},
+{
+"name": "WebAuthNCtapRpcGetAssertionUserList",
+"ordinal": 32,
+"rva": 64320,
+"forwarder": null,
+"ref": "webauthn.dll!0xfb40"
+},
+{
+"name": "WebAuthNCtapRpcGetCborCommand",
+"ordinal": 33,
+"rva": 63968,
+"forwarder": null,
+"ref": "webauthn.dll!0xf9e0"
+},
+{
+"name": "WebAuthNCtapRpcSelectGetAssertion",
+"ordinal": 34,
+"rva": 65376,
+"forwarder": null,
+"ref": "webauthn.dll!0xff60"
+},
+{
+"name": "WebAuthNCtapSendCommand",
+"ordinal": 35,
+"rva": 61616,
+"forwarder": null,
+"ref": "webauthn.dll!0xf0b0"
+},
+{
+"name": "WebAuthNCtapSetClientPin",
+"ordinal": 36,
+"rva": 50736,
+"forwarder": null,
+"ref": "webauthn.dll!0xc630"
+},
+{
+"name": "WebAuthNCtapStartDeviceChangeNotify",
+"ordinal": 37,
+"rva": 67200,
+"forwarder": null,
+"ref": "webauthn.dll!0x10680"
+},
+{
+"name": "WebAuthNCtapStopDeviceChangeNotify",
+"ordinal": 38,
+"rva": 67216,
+"forwarder": null,
+"ref": "webauthn.dll!0x10690"
+},
+{
+"name": "WebAuthNCtapVerifyGetAssertion",
+"ordinal": 39,
+"rva": 60752,
+"forwarder": null,
+"ref": "webauthn.dll!0xed50"
+},
+{
+"name": "WebAuthNDecodeAccountInformation",
+"ordinal": 40,
+"rva": 117344,
+"forwarder": null,
+"ref": "webauthn.dll!0x1ca60"
+},
+{
+"name": "WebAuthNDeletePlatformCredential",
+"ordinal": 41,
+"rva": 117552,
+"forwarder": null,
+"ref": "webauthn.dll!0x1cb30"
+},
+{
+"name": "WebAuthNEncodeAccountInformation",
+"ordinal": 42,
+"rva": 117136,
+"forwarder": null,
+"ref": "webauthn.dll!0x1c990"
+},
+{
+"name": "WebAuthNFreeAssertion",
+"ordinal": 43,
+"rva": 57568,
+"forwarder": null,
+"ref": "webauthn.dll!0xe0e0"
+},
+{
+"name": "WebAuthNFreeCredentialAttestation",
+"ordinal": 44,
+"rva": 44272,
+"forwarder": null,
+"ref": "webauthn.dll!0xacf0"
+},
+{
+"name": "WebAuthNFreeDecodedAccountInformation",
+"ordinal": 45,
+"rva": 57568,
+"forwarder": null,
+"ref": "webauthn.dll!0xe0e0"
+},
+{
+"name": "WebAuthNFreeEncodedAccountInformation",
+"ordinal": 46,
+"rva": 57568,
+"forwarder": null,
+"ref": "webauthn.dll!0xe0e0"
+},
+{
+"name": "WebAuthNFreePlatformCredentials",
+"ordinal": 47,
+"rva": 81008,
+"forwarder": null,
+"ref": "webauthn.dll!0x13c70"
+},
+{
+"name": "WebAuthNFreeUserEntityList",
+"ordinal": 48,
+"rva": 57568,
+"forwarder": null,
+"ref": "webauthn.dll!0xe0e0"
+},
+{
+"name": "WebAuthNGetApiVersionNumber",
+"ordinal": 49,
+"rva": 94384,
+"forwarder": null,
+"ref": "webauthn.dll!0x170b0"
+},
+{
+"name": "WebAuthNGetCancellationId",
+"ordinal": 50,
+"rva": 93872,
+"forwarder": null,
+"ref": "webauthn.dll!0x16eb0"
+},
+{
+"name": "WebAuthNGetCoseAlgorithmIdentifier",
+"ordinal": 51,
+"rva": 89840,
+"forwarder": null,
+"ref": "webauthn.dll!0x15ef0"
+},
+{
+"name": "WebAuthNGetCredentialIdFromAuthenticatorData",
+"ordinal": 52,
+"rva": 67232,
+"forwarder": null,
+"ref": "webauthn.dll!0x106a0"
+},
+{
+"name": "WebAuthNGetErrorName",
+"ordinal": 53,
+"rva": 63776,
+"forwarder": null,
+"ref": "webauthn.dll!0xf920"
+},
+{
+"name": "WebAuthNGetPlatformCredentials",
+"ordinal": 54,
+"rva": 119504,
+"forwarder": null,
+"ref": "webauthn.dll!0x1d2d0"
+},
+{
+"name": "WebAuthNGetW3CExceptionDOMError",
+"ordinal": 55,
+"rva": 63824,
+"forwarder": null,
+"ref": "webauthn.dll!0xf950"
+},
+{
+"name": "WebAuthNIsUserVerifyingPlatformAuthenticatorAvailable",
+"ordinal": 56,
+"rva": 116736,
+"forwarder": null,
+"ref": "webauthn.dll!0x1c800"
+}
+]
