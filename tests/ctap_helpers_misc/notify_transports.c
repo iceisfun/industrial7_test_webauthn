@@ -73,6 +73,17 @@ CHILD(ctapmisc_transports_preset_values)
     return 0x100 | (int)base;
 }
 
+CHILD(ctapmisc_transports_zero_guid)
+{
+    WebAuthNCtapGetSupportedTransports_pfn f = UN(WebAuthNCtapGetSupportedTransports);
+    if (!f) return CHILD_SKIP;
+    static const GUID z = { 0 };
+    DWORD v = 0xCAFEBABE;
+    if (f(&v, &z) != 0) return 2;
+    if (v != 1 && v != 3) return 3;
+    return 0x100 | (int)v;
+}
+
 static void check_transport_child(const char *name, int allow_unstable)
 {
     DWORD rc = t_run_child(name, "", 60000);
@@ -94,6 +105,8 @@ TEST(ctapmisc_transports_returns_s_ok_and_known_bits) { WebAuthNCtapGetSupported
 TEST(ctapmisc_transports_with_correlation_guid)       { WebAuthNCtapGetSupportedTransports_pfn f = UN(WebAuthNCtapGetSupportedTransports); REQUIRE(f); check_transport_child("ctapmisc_transports_guid", 0); }
 TEST(ctapmisc_transports_repeated_calls_stable)       { WebAuthNCtapGetSupportedTransports_pfn f = UN(WebAuthNCtapGetSupportedTransports); REQUIRE(f); check_transport_child("ctapmisc_transports_repeat", 1); }
 TEST(ctapmisc_transports_out_overwritten)             { WebAuthNCtapGetSupportedTransports_pfn f = UN(WebAuthNCtapGetSupportedTransports); REQUIRE(f); check_transport_child("ctapmisc_transports_preset_values", 0); }
+
+TEST(ctapmisc_transports_zero_correlation_guid)       { WebAuthNCtapGetSupportedTransports_pfn f = UN(WebAuthNCtapGetSupportedTransports); REQUIRE(f); check_transport_child("ctapmisc_transports_zero_guid", 0); }
 
 /* ---- Start / Stop device change notify -------------------------------- */
 /* Each child exits 0 when the sequence ran to completion without an exception. */

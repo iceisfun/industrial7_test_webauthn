@@ -15,7 +15,7 @@ TEST(ctapmisc_free_null_repeated)
 {
     WebAuthNCtapFreeSelectedDeviceInformation_pfn f = UN(WebAuthNCtapFreeSelectedDeviceInformation); REQUIRE(f);
     for (int i = 0; i < 1000; i++) f(NULL);
-    CHECK(1);
+    CHECK(HeapValidate(GetProcessHeap(), 0, NULL));
 }
 TEST(ctapmisc_free_localalloc_block)
 {
@@ -23,7 +23,7 @@ TEST(ctapmisc_free_localalloc_block)
     HLOCAL m = LocalAlloc(LPTR, 128);
     REQUIRE(m);
     f(m);
-    CHECK(1);
+    CHECK(HeapValidate(GetProcessHeap(), 0, NULL));
 }
 TEST(ctapmisc_free_zeroed_struct_on_local_heap)
 {
@@ -34,7 +34,7 @@ TEST(ctapmisc_free_zeroed_struct_on_local_heap)
         REQUIRE(p);
         f(p);
     }
-    CHECK(1);
+    CHECK(HeapValidate(GetProcessHeap(), 0, NULL));
 }
 TEST(ctapmisc_free_many_sizes)
 {
@@ -46,7 +46,7 @@ TEST(ctapmisc_free_many_sizes)
         memset(p, 0xA5, sz[i]);
         f(p);
     }
-    CHECK(1);
+    CHECK(HeapValidate(GetProcessHeap(), 0, NULL));
 }
 TEST(ctapmisc_free_same_entry_as_sibling_free_exports)
 {
@@ -64,8 +64,10 @@ TEST(ctapmisc_free_alloc_from_wnf_string_via_this_free)
     WebAuthNCtapFreeSelectedDeviceInformation_pfn f = UN(WebAuthNCtapFreeSelectedDeviceInformation); REQUIRE(f);
     WebAuthNCtapGetWnfLocalizedString_pfn g = UN(WebAuthNCtapGetWnfLocalizedString); REQUIRE(g);
     LPWSTR s = NULL; DWORD fb;
-    if (g(0, 9, (int)0x800705B4, 0, &s, &fb) == 0 && s) f(s);   /* both sides use the LocalAlloc heap */
-    CHECK(1);
+    HRESULT hr = g(0, 9, (int)0x800705B4, 0, &s, &fb);
+    CHECK(hr == 0 && s);
+    if (s) f(s);   /* both sides use the LocalAlloc heap */
+    CHECK(HeapValidate(GetProcessHeap(), 0, NULL));
 }
 
 /* ---- CryptsvcDllCtrl ----------------------------------------------------
@@ -223,7 +225,7 @@ TEST(ctapmisc_vc_wrong_guid_differing_in_each_field)
         EXPECT_EQ(p, NULL);
     }
 }
-TEST(ctapmisc_vc_well_known_iids_rejected)
+TEST(ctapmisc_vc_iunknown_iid_rejected)
 {
     VirtualChannelGetInstance_pfn f = UN(VirtualChannelGetInstance); REQUIRE(f);
     static const GUID iunk = { 0, 0, 0, { 0xC0, 0, 0, 0, 0, 0, 0, 0x46 } };
@@ -298,4 +300,43 @@ TEST(ctapmisc_vc_ordinal_6_matches_name)
 {
     FARPROC a = t_proc_in("webauthn.dll", "VirtualChannelGetInstance"); REQUIRE(a);
     EXPECT_EQ(t_proc_ord("webauthn.dll", 6), a);
+}
+
+TEST(ctapmisc_vc_zero_guid_rejected_count_untouched)
+{
+    VirtualChannelGetInstance_pfn f = UN(VirtualChannelGetInstance); REQUIRE(f);
+    static const GUID zero = { 0 };
+    ULONG n = 0x42;
+    EXPECT_EQ(f(&zero, &n, NULL), (LONG)0x80004002);
+    EXPECT_EQ(n, 0x42);
+}
+TEST(ctapmisc_vc_count_query_does_not_create_object)
+{
+    VirtualChannelGetInstance_pfn f = UN(VirtualChannelGetInstance); REQUIRE(f);
+    ULONG n = 0;
+    for (int i = 0; i < 100; i++) EXPECT_EQ(f(&IID_DVC, &n, NULL), 0);
+    CHECK(HeapValidate(GetProcessHeap(), 0, NULL));
+}
+TEST(ctapmisc_vc_create_release_cycle)
+{
+    VirtualChannelGetInstance_pfn f = UN(VirtualChannelGetInstance); REQUIRE(f);
+    for (int i = 0; i < 20; i++) {
+        ULONG n = 0; void *p = NULL;
+        LONG hr = f(&IID_DVC, &n, &p);
+        if (hr < 0) { t_note("create failed 0x%08lx", (unsigned long)hr); CHECK(p == NULL); return; }
+        CHECK(p != NULL); EXPECT_EQ(n, 1);
+        rel(p);
+    }
+}
+TEST(ctapmisc_ordinals_match_names)
+{
+    static const struct { unsigned ord; const char *name; } e[] = {
+        { 14, "WebAuthNCtapGetSupportedTransports" }, { 15, "WebAuthNCtapGetWnfLocalizedString" },
+        { 16, "WebAuthNCtapIsStopSendCommandError" }, { 37, "WebAuthNCtapStartDeviceChangeNotify" },
+        { 38, "WebAuthNCtapStopDeviceChangeNotify" },
+    };
+    for (unsigned i = 0; i < 5; i++) {
+        FARPROC a = t_proc_in("webauthn.dll", e[i].name); REQUIRE(a);
+        CHECKF(t_proc_ord("webauthn.dll", e[i].ord) == a, "ordinal %u vs %s", e[i].ord, e[i].name);
+    }
 }

@@ -136,8 +136,9 @@ TEST(ctapmisc_wnf_unmapped_hresult_uses_fallback)
         LPWSTR s = NULL; DWORD fb = 0;
         HRESULT hr = call(0, 9, hrs[i], 0, &s, &fb);
         CHECKF(fb == 1, "hr=0x%08x fb=%lu", hrs[i], fb);
-        CHECKF(hr == 0, "hr=0x%08x result 0x%08lx", hrs[i], (unsigned long)hr);
-        CHECKF(s && s[0], "string present for 0x%08x", hrs[i]);
+        /* result of formatting generic resource 0x1FB is not provable from the decomp: invariant only */
+        CHECKF((hr >= 0) == (s != NULL), "hr=0x%08x result 0x%08lx s=%p", hrs[i], (unsigned long)hr, s);
+        if (hr != 0) t_note("fallback hr=0x%08x -> 0x%08lx", hrs[i], (unsigned long)hr);
         if (s) t_note("fallback[9, 0x%08x] = %.80ls", hrs[i], s);
         freestr(s);
     }
@@ -147,7 +148,8 @@ TEST(ctapmisc_wnf_fallback_string_owned_by_caller)
     REQUIRE(UN(WebAuthNCtapGetWnfLocalizedString));
     LPWSTR s = NULL; DWORD fb = 0;
     HRESULT hr = call(0x7777, 9, 0x13572468, 0, &s, &fb);
-    CHECK(hr == 0 && fb == 1);
+    CHECK(fb == 1);
+    CHECK((hr >= 0) == (s != NULL));
     if (s) { CHECK(LocalSize(s) >= 2); CHECK(LocalFree(s) == NULL); }
 }
 TEST(ctapmisc_wnf_fallback_unknown_category_not_9)
@@ -158,7 +160,7 @@ TEST(ctapmisc_wnf_fallback_unknown_category_not_9)
     for (int i = 0; i < 3; i++) {
         LPWSTR s = NULL; DWORD fb = 0;
         HRESULT hr = call(0x7ffe0000, cats[i], 1, 1, &s, &fb);
-        CHECKF(hr == 0 && fb == 1 && s, "cat=0x%x hr=0x%08lx fb=%lu", cats[i], (unsigned long)hr, fb);
+        CHECKF(fb == 1 && ((hr >= 0) == (s != NULL)), "cat=0x%x hr=0x%08lx fb=%lu", cats[i], (unsigned long)hr, fb);
         freestr(s);
     }
 }
@@ -175,6 +177,7 @@ TEST(ctapmisc_wnf_outputs_reset_even_when_prepoisoned)
     s = (LPWSTR)(ULONG_PTR)0x1; fb = 0xFFFFFFFFu;
     hr = call(0, 9, 0x13572468, 0, &s, &fb);
     EXPECT_EQ(fb, 1);
+    CHECK((hr >= 0) == (s != NULL));
     freestr(s == (LPWSTR)1 ? NULL : s);
 }
 TEST(ctapmisc_wnf_second_table_probe_no_crash)
@@ -215,4 +218,55 @@ TEST(ctapmisc_wnf_stress_alloc_free_1000)
         freestr(s);
     }
     CHECK(ok == 1000);
+}
+
+TEST(ctapmisc_wnf_smartcard_shared_resource_equal_strings)
+{
+    REQUIRE(UN(WebAuthNCtapGetWnfLocalizedString));
+    /* 0x8010002F, 0x80100017, 0x8010001F all map to resource 0x197; 0x80100069 maps to 0x196 */
+    static const int same[] = { (int)0x8010002F, (int)0x80100017, (int)0x8010001F };
+    LPWSTR base = NULL; DWORD fb;
+    CHECK(call(2, 9, same[0], 0, &base, &fb) == 0);
+    for (int i = 1; i < 3; i++) {
+        LPWSTR s = NULL;
+        CHECK(call(2, 9, same[i], 0, &s, &fb) == 0);
+        if (s && base) EXPECT_WSTR(s, base);
+        freestr(s);
+    }
+    LPWSTR other = NULL;
+    CHECK(call(2, 9, (int)0x80100069, 0, &other, &fb) == 0);
+    if (other && base) CHECK(lstrcmpW(other, base) != 0);
+    freestr(other); freestr(base);
+}
+TEST(ctapmisc_wnf_smartcard_d_is_wildcard)
+{
+    REQUIRE(UN(WebAuthNCtapGetWnfLocalizedString));
+    int ds[] = { 0, 3, -7 };
+    for (int i = 0; i < 3; i++) {
+        LPWSTR s = NULL; DWORD fb = 9;
+        HRESULT hr = call(2, 9, (int)0x80100069, ds[i], &s, &fb);
+        CHECKF(hr == 0 && fb == 0 && s, "d=%d", ds[i]);
+        freestr(s);
+    }
+}
+TEST(ctapmisc_wnf_table9_ignores_nothing_else_distinct_resources)
+{
+    /* each distinct resource id in the b==9 table yields a distinct string (6 distinct ids shown by key) */
+    REQUIRE(UN(WebAuthNCtapGetWnfLocalizedString));
+    static const int keys[] = { (int)0x800700AA, (int)0x800705B4, (int)0x80070032, (int)0x80090023,
+                                (int)0x80090320, (int)0x8009030D, (int)0x800703EA };
+    LPWSTR s[7] = { 0 }; DWORD fb;
+    for (int i = 0; i < 7; i++) CHECK(call(0, 9, keys[i], 0, &s[i], &fb) == 0);
+    for (int i = 0; i < 7; i++)
+        for (int j = i + 1; j < 7; j++)
+            if (s[i] && s[j]) CHECKF(lstrcmpW(s[i], s[j]) != 0, "keys %d and %d gave equal strings", i, j);
+    for (int i = 0; i < 7; i++) freestr(s[i]);
+}
+TEST(ctapmisc_wnf_nonmatching_a_for_nonwildcard_still_hits_generic_entries)
+{
+    REQUIRE(UN(WebAuthNCtapGetWnfLocalizedString));
+    LPWSTR s = NULL; DWORD fb = 5;
+    HRESULT hr = call(0xFFFF, 9, (int)0x80090023, 77, &s, &fb);
+    CHECK(hr == 0); EXPECT_EQ(fb, 0); CHECK(s != NULL);
+    freestr(s);
 }

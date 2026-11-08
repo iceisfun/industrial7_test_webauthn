@@ -183,3 +183,39 @@ TEST(ctapmisc_stop_true_set_is_closed_under_dom_mapping)
     EXPECT_EQ(f(H(0x80090035u)), 0);
     EXPECT_EQ(f(H(0x800705B4u)), 0);
 }
+
+TEST(ctapmisc_stop_sweep_full_nte)
+{
+    WebAuthNCtapIsStopSendCommandError_pfn f = UN(WebAuthNCtapIsStopSendCommandError); REQUIRE(f);
+    int bad = 0;
+    for (unsigned h = 0x80090000u; h < 0x800A0000u; h++)
+        if (f((int)h) != model((int)h)) { if (bad++ < 10) CHECKF(0, "hr=0x%08x got %d want %d", h, (int)f((int)h), model((int)h)); }
+    CHECK(bad == 0);
+}
+
+TEST(ctapmisc_stop_sweep_full_win32)
+{
+    WebAuthNCtapIsStopSendCommandError_pfn f = UN(WebAuthNCtapIsStopSendCommandError); REQUIRE(f);
+    int bad = 0;
+    for (unsigned h = 0x80070000u; h < 0x80080000u; h++)
+        if (f((int)h) != model((int)h)) { if (bad++ < 10) CHECKF(0, "hr=0x%08x got %d want %d", h, (int)f((int)h), model((int)h)); }
+    CHECK(bad == 0);
+}
+
+TEST(ctapmisc_stop_sweep_full_scard)
+{
+    WebAuthNCtapIsStopSendCommandError_pfn f = UN(WebAuthNCtapIsStopSendCommandError); REQUIRE(f);
+    int bad = 0;
+    for (unsigned h = 0x80100000u; h < 0x80110000u; h++)
+        if (f((int)h) != model((int)h)) { if (bad++ < 10) CHECKF(0, "hr=0x%08x got %d want %d", h, (int)f((int)h), model((int)h)); }
+    CHECK(bad == 0);
+}
+
+TEST(ctapmisc_stop_sweep_full_positive)
+{
+    WebAuthNCtapIsStopSendCommandError_pfn f = UN(WebAuthNCtapIsStopSendCommandError); REQUIRE(f);
+    int bad = 0;
+    for (unsigned h = 0x00000000u; h < 0x00010000u; h++)
+        if (f((int)h) != model((int)h)) { if (bad++ < 10) CHECKF(0, "hr=0x%08x got %d want %d", h, (int)f((int)h), model((int)h)); }
+    CHECK(bad == 0);
+}
