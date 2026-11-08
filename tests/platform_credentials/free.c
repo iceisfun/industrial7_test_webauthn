@@ -179,3 +179,20 @@ TEST(pc_freeue_result_of_getlasterror_untouched) {
     if (e != 0x4242) t_note("FreeUserEntityList changed last error to %lu", e);
     CHECK(1);
 }
+
+/* ---- shared-code aliases resolved by ordinal (from the export table) ---- */
+#define ORD_ALIAS_TEST(nm, ord, name) \
+    TEST(pc_alias_ord_##nm) { FARPROC o = t_proc_ord("webauthn.dll", ord); REQUIRE(o); \
+        EXPECT_EQ(o, t_proc_in("webauthn.dll", name)); }
+ORD_ALIAS_TEST(manage_free_display_24, 24, "WebAuthNCtapManageFreeDisplayCredentials")
+ORD_ALIAS_TEST(free_assertion_43, 43, "WebAuthNFreeAssertion")
+ORD_ALIAS_TEST(free_decoded_45, 45, "WebAuthNFreeDecodedAccountInformation")
+ORD_ALIAS_TEST(free_encoded_46, 46, "WebAuthNFreeEncodedAccountInformation")
+ORD_ALIAS_TEST(free_selected_device_12, 12, "WebAuthNCtapFreeSelectedDeviceInformation")
+
+TEST(pc_ordinal_aliases_share_address_groups) {
+    FARPROC a = t_proc_ord("webauthn.dll", 24), b = t_proc_ord("webauthn.dll", 47);
+    FARPROC c = t_proc_ord("webauthn.dll", 48), d = t_proc_ord("webauthn.dll", 43);
+    REQUIRE(a); REQUIRE(b); REQUIRE(c); REQUIRE(d);
+    EXPECT_EQ(a, b); EXPECT_EQ(c, d); EXPECT_NE(a, c);
+}
