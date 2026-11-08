@@ -39,7 +39,7 @@ static void drop(NCRYPT_PROV_HANDLE p, const WCHAR *name) {
 static NCRYPT_KEY_HANDLE mk_persisted(NCRYPT_PROV_HANDLE p, LPCWSTR alg, const WCHAR *name, DWORD flags, int exportable) {
     NCRYPT_KEY_HANDLE k = 0;
     if (U(NCryptCreatePersistedKey)(p, &k, alg, name, 0, flags) != 0) return 0;
-    if (exportable) { DWORD pol = NCRYPT_ALLOW_EXPORT_FLAG; U(NCryptSetProperty)(k, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE)&pol, sizeof pol, 0); }
+    if (exportable) { DWORD pol = NCRYPT_ALLOW_EXPORT_FLAG | NCRYPT_ALLOW_PLAINTEXT_EXPORT_FLAG;  /* plaintext private blobs need both bits */ U(NCryptSetProperty)(k, NCRYPT_EXPORT_POLICY_PROPERTY, (PBYTE)&pol, sizeof pol, 0); }
     if (U(NCryptFinalizeKey)(k, 0) != 0) { U(NCryptDeleteKey)(k, 0); return 0; }
     return k;
 }
