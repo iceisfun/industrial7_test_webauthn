@@ -95,9 +95,14 @@ TEST(dx_gap0_context_function_lifecycle) {
         if (f) { for (ULONG i = 0; i < f->cFunctions; i++) if (!lstrcmpiW(f->rgpszFunctions[i], L"GAP0DXFN")) found = 1; U(BCryptFreeBuffer)(f); }
         CHECK(found);
         CRYPT_CONTEXT_FUNCTION_CONFIG fc = { 0, 0 }, *q = NULL;
+        /* Windows 10 22H2: a freshly added function has no configuration entry (STATUS_NOT_FOUND 0xc0000225) until it is configured. */
+        NTSTATUS qs = U(BCryptQueryContextFunctionConfiguration)(CRYPT_LOCAL, dxg_name(), BCRYPT_CIPHER_INTERFACE, L"GAP0DXFN", &cb, &q);
+        t_note("Query function configuration before configure -> 0x%08lx", (unsigned long)qs);
+        if (qs >= 0 && q) U(BCryptFreeBuffer)(q);
+        q = NULL;
+        G0_OKST(U(BCryptConfigureContextFunction)(CRYPT_LOCAL, dxg_name(), BCRYPT_CIPHER_INTERFACE, L"GAP0DXFN", &fc));
         G0_OKST(U(BCryptQueryContextFunctionConfiguration)(CRYPT_LOCAL, dxg_name(), BCRYPT_CIPHER_INTERFACE, L"GAP0DXFN", &cb, &q));
         if (q) { EXPECT_EQ(q->dwFlags, 0); U(BCryptFreeBuffer)(q); }
-        G0_OKST(U(BCryptConfigureContextFunction)(CRYPT_LOCAL, dxg_name(), BCRYPT_CIPHER_INTERFACE, L"GAP0DXFN", &fc));
         G0_OKST(U(BCryptRemoveContextFunction)(CRYPT_LOCAL, dxg_name(), BCRYPT_CIPHER_INTERFACE, L"GAP0DXFN"));
         f = NULL; found = 0;
         st = U(BCryptEnumContextFunctions)(CRYPT_LOCAL, dxg_name(), BCRYPT_CIPHER_INTERFACE, &cb, &f);
