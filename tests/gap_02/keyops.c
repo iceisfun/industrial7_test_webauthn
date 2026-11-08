@@ -279,7 +279,9 @@ TEST(gap2_verify_rsa_wrong_key_and_length) {
     BCRYPT_PKCS1_PADDING_INFO pi = { NCRYPT_SHA256_ALGORITHM };
     BYTE sig[128]; DWORD cb = 0;
     G2_EQ(U(NCryptSignHash)(a.k, &pi, (PBYTE)HASH32, 32, sig, sizeof sig, &cb, NCRYPT_PAD_PKCS1_FLAG), 0);
-    G2_EQ(U(NCryptVerifySignature)(b.k, &pi, (PBYTE)HASH32, 32, sig, cb, NCRYPT_PAD_PKCS1_FLAG), G2_NTE_BAD_SIGNATURE);
+    /* Another random key: BAD_SIGNATURE, or INVALID_PARAMETER when the signature value is not below the other key's modulus (varies per key pair). */
+    { SECURITY_STATUS w = U(NCryptVerifySignature)(b.k, &pi, (PBYTE)HASH32, 32, sig, cb, NCRYPT_PAD_PKCS1_FLAG);
+      CHECKF(w == G2_NTE_BAD_SIGNATURE || w == G2_NTE_INVALID_PARAM, "wrong-key verify -> 0x%08lx", (unsigned long)w); }
     G2_EQ(U(NCryptVerifySignature)(a.k, &pi, (PBYTE)HASH32, 32, sig, cb, NCRYPT_PAD_PKCS1_FLAG), 0);
     SECURITY_STATUS r = U(NCryptVerifySignature)(a.k, &pi, (PBYTE)HASH32, 32, sig, cb - 1, NCRYPT_PAD_PKCS1_FLAG);
     CHECK(r != 0); t_note("verify with signature one byte short -> 0x%08lx", (unsigned long)r);
@@ -363,7 +365,7 @@ TEST(gap2_setprop_after_finalize) {
     kp_t x; if (!mk(&x, NCRYPT_RSA_ALGORITHM, 1024)) return;
     DWORD v = 2048;
     SECURITY_STATUS r = U(NCryptSetProperty)(x.k, NCRYPT_LENGTH_PROPERTY, (PBYTE)&v, 4, 0);
-    CHECK(r != 0);   /* length is fixed once the key is finalized */
+    G2_EQ(r, 0);   /* Windows 10 22H2 accepts a Length write after finalization (same as gap_01) */
     t_note("NCryptSetProperty(Length) after finalize -> 0x%08lx", (unsigned long)r);
     rel(&x);
 }

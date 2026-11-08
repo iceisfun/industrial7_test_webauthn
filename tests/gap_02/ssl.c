@@ -244,7 +244,7 @@ TEST(gap2_ssl_generate_master_key_validation) {
      * (an invalid one is silently treated as absent) */
     G2_EQ(UN(SslGenerateMasterKey)(G2_HND(&p), 0, 0, NULL, 0x303, 0xC02F, 0, NULL, NULL, 0, 0), G2_NTE_INVALID_PARAM);
     G2_EQ(UN(SslGenerateMasterKey)(G2_HND(&p), G2_HND(&k), G2_HND(&k), NULL, 0x303, 0xC02F, 0, NULL, NULL, 0, 0), G2_NTE_INVALID_PARAM);
-    G2_EQ(UN(SslGenerateMasterKey)(G2_HND(&p), 0x1000, 0x2000, NULL, 0x303, 0xC02F, 0, NULL, NULL, 0, 0), G2_NTE_INVALID_PARAM);
+    /* Not called: Windows 10 22H2 dereferences arbitrary private/public key handles here (access violation), so they are not "treated as absent". */
     G2_EQ(UN(SslGenerateMasterKey)(G2_HND(&p), G2_HND(&p), G2_HND(&p), NULL, 0, 0, 0, NULL, NULL, 0, 0), G2_NTE_INVALID_PARAM);
     EXPECT_EQ(m, 0x99);
 }
