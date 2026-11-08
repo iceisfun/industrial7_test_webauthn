@@ -39,8 +39,22 @@ TEST(apv_pe_subsystem_version_10_0) {
 }
 TEST(apv_pe_win32_version_value_zero) { APV_REQUIRE_MOD(m); PE_NT(m); EXPECT_EQ(nt->OptionalHeader.Win32VersionValue, 0); }
 TEST(apv_pe_preferred_image_base) {
+    /* The loader rewrites OptionalHeader.ImageBase in the mapped image to the actual base after relocation
+     * (observed on Windows 10 22H2: equals the module handle), so the preferred base is read from the file. */
     APV_REQUIRE_MOD(m); PE_NT(m);
-    EXPECT_EQ(nt->OptionalHeader.ImageBase, 0x180000000ull);
+    CHECK(nt->OptionalHeader.ImageBase == (ULONGLONG)(ULONG_PTR)m || nt->OptionalHeader.ImageBase == 0x180000000ull);
+    WCHAR path[MAX_PATH];
+    if (!GetModuleFileNameW(m, path, MAX_PATH)) { t_skip("no path"); return; }
+    HANDLE f = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL, OPEN_EXISTING, 0, NULL);
+    CHECK(f != INVALID_HANDLE_VALUE); if (f == INVALID_HANDLE_VALUE) return;
+    BYTE hdr[1024]; DWORD n = 0; BOOL ok = ReadFile(f, hdr, sizeof hdr, &n, NULL); CloseHandle(f);
+    CHECK(ok && n == sizeof hdr); if (!ok || n != sizeof hdr) return;
+    const IMAGE_DOS_HEADER *d = (const IMAGE_DOS_HEADER *)hdr;
+    CHECK(d->e_magic == IMAGE_DOS_SIGNATURE && d->e_lfanew > 0 && (size_t)d->e_lfanew < sizeof hdr - sizeof(IMAGE_NT_HEADERS64));
+    if (d->e_magic != IMAGE_DOS_SIGNATURE || d->e_lfanew <= 0 || (size_t)d->e_lfanew >= sizeof hdr - sizeof(IMAGE_NT_HEADERS64)) return;
+    const IMAGE_NT_HEADERS64 *fnt = (const IMAGE_NT_HEADERS64 *)(hdr + d->e_lfanew);
+    EXPECT_EQ(fnt->OptionalHeader.ImageBase, 0x180000000ull);
+    t_note("mapped ImageBase field 0x%llx, module handle %p", (unsigned long long)nt->OptionalHeader.ImageBase, (void *)m);
 }
 TEST(apv_pe_mapped_at_64k_aligned_address) { APV_REQUIRE_MOD(m); EXPECT_EQ((ULONG_PTR)m & 0xFFFF, 0); }
 TEST(apv_pe_alignments) {

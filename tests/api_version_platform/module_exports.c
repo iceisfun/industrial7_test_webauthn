@@ -192,7 +192,7 @@ TEST(apv_exp_ordinal_out_of_range) {
         SET_ERR(0);
         FARPROC p = GetProcAddress(m, MAKEINTRESOURCEA(ords[i]));
         CHECKF(p == NULL, "ordinal %u resolved", ords[i]);
-        EXPECT_ERR(ERROR_PROC_NOT_FOUND);
+        EXPECT_ERR(ERROR_INVALID_ORDINAL);  /* 182 on Windows 10 22H2 (not 127) */
     }
 }
 TEST(apv_exp_ordinal_zero_does_not_resolve) {
