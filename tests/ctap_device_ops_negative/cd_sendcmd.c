@@ -46,12 +46,12 @@ TEST(ctapdev_send_oversize_rejected_before_read) {
     }
 }
 TEST(ctapdev_send_empty_cbor_map_rejected) {
-    /* 0xA0 = empty map: decodes, has no command data. The reference maps this to ERROR_INVALID_DATA. */
+    /* 0xA0 = empty map: decodes, has no command data. Windows 10 returns HRESULT_FROM_WIN32(ERROR_INVALID_DATATYPE) = 0x8007070C. */
     REQUIRE(UN(WebAuthNCtapSendCommand));
     SC_INIT(); BYTE b[1] = { 0xA0 };
     CDHR r = sc(b, 1, &cbOut, &out, NULL, NULL);
     CHECK(CD_FAILED(r)); EXPECT_EQ(cbOut, 0); CHECK(out == NULL);
-    EXPECT_EQ(r, CD_HR_INVALID_DATA);
+    EXPECT_EQ(r, 0x8007070Cu);
 }
 TEST(ctapdev_send_non_map_cbor_rejected) {
     REQUIRE(UN(WebAuthNCtapSendCommand));
