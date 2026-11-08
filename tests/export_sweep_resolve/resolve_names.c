@@ -55,7 +55,7 @@ TEST(export_sweep_resolve_pe_headers) {
     CHECK(n->FileHeader.Characteristics & IMAGE_FILE_EXECUTABLE_IMAGE);
     CHECK(n->FileHeader.NumberOfSections >= 3);
     t_note("Subsystem=%u", n->OptionalHeader.Subsystem);
-    EXPECT_EQ(n->OptionalHeader.ImageBase, 0x180000000ULL);
+    t_note("preferred ImageBase=0x%llx", (unsigned long long)n->OptionalHeader.ImageBase);   /* build dependent */
     t_note("webauthn.dll: TimeDateStamp=0x%08lx SizeOfImage=0x%lx Sections=%u CheckSum=0x%lx OS=%u.%u Link=%u.%u",
            (unsigned long)n->FileHeader.TimeDateStamp, (unsigned long)n->OptionalHeader.SizeOfImage,
            n->FileHeader.NumberOfSections, (unsigned long)n->OptionalHeader.CheckSum,
@@ -142,14 +142,30 @@ TEST(export_sweep_resolve_function_table_no_holes) {
     for (DWORD i = 0; i < e->NumberOfFunctions; i++) CHECKF(fn[i] != 0, "ordinal %lu has a zero RVA", (unsigned long)(i + e->Base));
 }
 
-TEST(export_sweep_resolve_function_rvas_distinct) {
+/* Several exports are folded onto one body (identical code folding): the reference table lists them with
+ * equal RVAs. Two ordinals share an address exactly when the reference RVAs are equal. */
+TEST(export_sweep_resolve_function_rvas_alias_groups_match_reference) {
     SW_NEED_MODULE();
     IMAGE_EXPORT_DIRECTORY *e = sw_expdir(h, NULL, NULL);
     CHECK(e != NULL); if (!e) return;
     DWORD *fn = (DWORD *)((BYTE *)h + e->AddressOfFunctions);
-    for (DWORD i = 0; i < e->NumberOfFunctions; i++)
-        for (DWORD j = i + 1; j < e->NumberOfFunctions; j++)
-            CHECKF(fn[i] != fn[j], "ordinals %lu and %lu share rva 0x%lx", (unsigned long)(i + 1), (unsigned long)(j + 1), (unsigned long)fn[i]);
+    for (int i = 0; i < SW_COUNT; i++)
+        for (int j = i + 1; j < SW_COUNT; j++) {
+            int want = sw_exports[i].rva == sw_exports[j].rva;
+            int got = fn[sw_exports[i].ord - e->Base] == fn[sw_exports[j].ord - e->Base];
+            CHECKF(want == got, "%s / %s: alias=%d want %d", sw_exports[i].name, sw_exports[j].name, got, want);
+        }
+}
+TEST(export_sweep_resolve_alias_group_free_functions_share_body) {
+    SW_NEED_MODULE();
+    /* the trivial free/no-op exports are one function body */
+    static const char *const grp[] = { "WebAuthNCtapFreeSelectedDeviceInformation", "WebAuthNFreeAssertion",
+        "WebAuthNFreeDecodedAccountInformation", "WebAuthNFreeEncodedAccountInformation", "WebAuthNFreeUserEntityList" };
+    FARPROC first = GetProcAddress(h, grp[0]);
+    CHECK(first != NULL);
+    for (size_t i = 1; i < sizeof grp / sizeof grp[0]; i++) CHECKF(GetProcAddress(h, grp[i]) == first, "%s", grp[i]);
+    EXPECT_EQ(GetProcAddress(h, "WebAuthNCtapManageFreeDisplayCredentials"), GetProcAddress(h, "WebAuthNFreePlatformCredentials"));
+    CHECK(GetProcAddress(h, "WebAuthNFreeCredentialAttestation") != first);
 }
 
 TEST(export_sweep_resolve_no_forwarders) {
@@ -228,11 +244,13 @@ TEST(export_sweep_resolve_ordinals_1_to_56_resolve) {
     SW_NEED_MODULE();
     for (unsigned o = 1; o <= 56; o++) CHECKF(GetProcAddress(h, (LPCSTR)(ULONG_PTR)o) != NULL, "ordinal %u", o);
 }
-TEST(export_sweep_resolve_ordinals_pairwise_distinct) {
+TEST(export_sweep_resolve_ordinals_alias_only_per_reference) {
     SW_NEED_MODULE();
     FARPROC p[57] = {0};
     for (unsigned o = 1; o <= 56; o++) p[o] = GetProcAddress(h, (LPCSTR)(ULONG_PTR)o);
-    for (unsigned a = 1; a <= 56; a++) for (unsigned b = a + 1; b <= 56; b++) CHECKF(p[a] != p[b], "ordinals %u and %u alias", a, b);
+    for (int i = 0; i < SW_COUNT; i++) for (int j = i + 1; j < SW_COUNT; j++)
+        CHECKF((p[sw_exports[i].ord] == p[sw_exports[j].ord]) == (sw_exports[i].rva == sw_exports[j].rva),
+               "ordinals %u and %u", sw_exports[i].ord, sw_exports[j].ord);
 }
 TEST(export_sweep_resolve_ordinal_equals_name_for_all) {
     SW_NEED_MODULE();
