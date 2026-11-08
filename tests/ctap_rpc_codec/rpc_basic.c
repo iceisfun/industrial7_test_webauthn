@@ -337,3 +337,16 @@ TEST(ctaprpc_getcbor_failure_path_no_leak) {
     CHECKF(bad == 0, "%d unstable results", bad);
     if (before && after) CHECKF(after < before + 3 * 1024 * 1024, "private bytes grew %lld", (long long)after - (long long)before);
 }
+
+TEST(ctaprpc_free_helper_alias_addresses) {
+    /* In the reference build several free helpers are one shared LocalFree wrapper; record only. */
+    REQUIRE(UN(WebAuthNFreeAssertion));
+    static const char *names[] = { "WebAuthNCtapFreeSelectedDeviceInformation", "WebAuthNFreeDecodedAccountInformation",
+        "WebAuthNFreeEncodedAccountInformation", "WebAuthNFreeUserEntityList" };
+    FARPROC base = t_proc_in("webauthn.dll", "WebAuthNFreeAssertion");
+    for (size_t i = 0; i < 4; i++) {
+        FARPROC p = t_proc_in("webauthn.dll", names[i]);
+        t_note("%s %s WebAuthNFreeAssertion", names[i], p == base ? "==" : "!=");
+    }
+    CHECK(base != NULL);
+}
